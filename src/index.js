@@ -6,8 +6,8 @@
 // 主要處理函式
 export default {
     async fetch(request, env, ctx) {
-      // 允許的來源網站
-      const allowedOrigins = ['*'];
+      // 從環境變數中獲取允許的來源
+      const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['*'];
       
       // 取得請求來源
       const origin = request.headers.get('Origin') || '*';
@@ -50,13 +50,29 @@ export default {
    */
   async function handleUpload(request, env) {
     try {
+      // 取得請求來源
+      const origin = request.headers.get('Origin') || '*';
+      const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['*'];
+
+      // 檢查請求大小
+      const contentLength = request.headers.get('Content-Length');
+      if (contentLength && parseInt(contentLength) > 100 * 1024 * 1024) {
+        return errorResponse('File too large (max 100MB)', 413, origin);
+      }
+      
       // 取得並驗證請求資料
-      const formData = await request.formData();
+      let formData;
+      try {
+        formData = await request.formData();
+      } catch (error) {
+        return errorResponse(`Failed to parse form data: ${error.message}`, 400, origin);
+      }
+      
       const file = formData.get('file');
       
       // 檔案驗證
       if (!file || !(file instanceof File)) {
-        return errorResponse('No file or invalid file provided', 400);
+        return errorResponse('No file or invalid file provided', 400, origin);
       }
       
       // 取得檔案名稱
@@ -93,20 +109,37 @@ export default {
         // 使用指定的儲存空間
         r2Binding = bucketName;
       } else {
-        // 自動偵測第一個可用的 R2 binding
-        r2Binding = Object.keys(env).find(key => env[key] && typeof env[key].put === 'function') || 'model';
+        // 自動偵測所有可用的 R2 binding
+        const r2Bindings = Object.keys(env).filter(key => {
+          return env[key] && typeof env[key].put === 'function';
+        });
+        
+        if (r2Bindings.length === 0) {
+          return errorResponse('No R2 buckets available', 500, origin);
+        }
+        
+        // 使用第一個可用的 binding
+        r2Binding = r2Bindings[0];
       }
       
       // 將儲存空間名稱加入自訂中繼資料
       customMetadata.bucket = r2Binding;
       
-      // 上傳檔案到 R2
-      await env[r2Binding].put(fileName, file, {
-        httpMetadata: {
-          contentType: contentType
-        },
-        customMetadata: customMetadata
-      });
+      try {
+        // 上傳檔案到 R2
+        await env[r2Binding].put(fileName, file, {
+          httpMetadata: {
+            contentType: contentType
+          },
+          customMetadata: customMetadata
+        });
+      } catch (error) {
+        console.error('R2 upload error:', error);
+        return errorResponse(`R2 upload failed: ${error.message}`, 500, origin);
+      }
+      
+      // 檢查是否為資料夾上傳流程
+      const isFromFolderUpload = formData.has('fileName');
       
       // 回傳成功訊息
       return new Response(
@@ -115,20 +148,23 @@ export default {
           fileName: fileName,
           size: file.size,
           contentType: contentType,
-          url: `/files/${fileName}`
+          bucket: r2Binding,
+          url: `/files/${fileName}`,
+          isFromFolderUpload: isFromFolderUpload
         }),
         {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...getCORSHeaders(request.headers.get('Origin'), allowedOrigins)
+            ...getCORSHeaders(origin, allowedOrigins)
           }
         }
       );
     } catch (error) {
       // 錯誤處理
       console.error('Upload error:', error);
-      return errorResponse(`Upload failed: ${error.message}`, 500);
+      const origin = request.headers.get('Origin') || '*';
+      return errorResponse(`Upload failed: ${error.message}`, 500, origin);
     }
   }
   
@@ -137,9 +173,13 @@ export default {
    */
   async function handleDownload(request, env, fileName) {
     try {
+      // 取得請求來源
+      const origin = request.headers.get('Origin') || '*';
+      const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['*'];
+      
       // 參數驗證
       if (!fileName) {
-        return errorResponse('File name is required', 400);
+        return errorResponse('File name is required', 400, origin);
       }
       
       // 從 URL 參數獲取指定的 bucket (如有)
@@ -151,8 +191,17 @@ export default {
         // 使用指定的儲存空間
         r2Binding = bucketName;
       } else {
-        // 自動偵測第一個可用的 R2 binding
-        r2Binding = Object.keys(env).find(key => env[key] && typeof env[key].put === 'function') || 'model';
+        // 自動偵測所有可用的 R2 binding
+        const r2Bindings = Object.keys(env).filter(key => {
+          return env[key] && typeof env[key].put === 'function';
+        });
+        
+        if (r2Bindings.length === 0) {
+          return errorResponse('No R2 buckets available', 500, origin);
+        }
+        
+        // 使用第一個可用的 binding
+        r2Binding = r2Bindings[0];
       }
       
       // 從 R2 取得檔案
@@ -160,7 +209,7 @@ export default {
       
       // 檔案不存在
       if (object === null) {
-        return errorResponse('File not found', 404);
+        return errorResponse('File not found', 404, origin);
       }
       
       // 取得檔案內容
@@ -173,7 +222,7 @@ export default {
         'Content-Disposition': `inline; filename="${fileName}"`,
         'ETag': object.httpEtag,
         'Cache-Control': 'public, max-age=31536000',
-        ...getCORSHeaders(request.headers.get('Origin'), ['*'])
+        ...getCORSHeaders(origin, allowedOrigins)
       };
       
       // 加入自訂中繼資料到頭部
@@ -185,7 +234,8 @@ export default {
       return new Response(data, { headers });
     } catch (error) {
       console.error('Download error:', error);
-      return errorResponse(`Download failed: ${error.message}`, 500);
+      const origin = request.headers.get('Origin') || '*';
+      return errorResponse(`Download failed: ${error.message}`, 500, origin);
     }
   }
   
@@ -194,9 +244,13 @@ export default {
    */
   async function handleDelete(request, env, fileName) {
     try {
+      // 取得請求來源
+      const origin = request.headers.get('Origin') || '*';
+      const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['*'];
+      
       // 參數驗證
       if (!fileName) {
-        return errorResponse('File name is required', 400);
+        return errorResponse('File name is required', 400, origin);
       }
       
       // 驗證授權 (此處簡化，實際應用中應加強驗證)
@@ -211,8 +265,17 @@ export default {
         // 使用指定的儲存空間
         r2Binding = bucketName;
       } else {
-        // 自動偵測第一個可用的 R2 binding
-        r2Binding = Object.keys(env).find(key => env[key] && typeof env[key].put === 'function') || 'model';
+        // 自動偵測所有可用的 R2 binding
+        const r2Bindings = Object.keys(env).filter(key => {
+          return env[key] && typeof env[key].put === 'function';
+        });
+        
+        if (r2Bindings.length === 0) {
+          return errorResponse('No R2 buckets available', 500, origin);
+        }
+        
+        // 使用第一個可用的 binding
+        r2Binding = r2Bindings[0];
       }
       
       // 從 R2 刪除檔案
@@ -223,19 +286,21 @@ export default {
         JSON.stringify({
           success: true,
           fileName: fileName,
+          bucket: r2Binding,
           message: 'File deleted successfully'
         }),
         {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...getCORSHeaders(request.headers.get('Origin'), ['*'])
+            ...getCORSHeaders(origin, allowedOrigins)
           }
         }
       );
     } catch (error) {
       console.error('Delete error:', error);
-      return errorResponse(`Delete failed: ${error.message}`, 500);
+      const origin = request.headers.get('Origin') || '*';
+      return errorResponse(`Delete failed: ${error.message}`, 500, origin);
     }
   }
   
@@ -244,6 +309,10 @@ export default {
    */
   async function handleList(request, env) {
     try {
+      // 取得請求來源
+      const origin = request.headers.get('Origin') || '*';
+      const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['*'];
+      
       // 分頁參數
       const url = new URL(request.url);
       const prefix = url.searchParams.get('prefix') || '';
@@ -269,8 +338,17 @@ export default {
         // 使用指定的儲存空間
         r2Binding = bucketName;
       } else {
-        // 自動偵測第一個可用的 R2 binding
-        r2Binding = Object.keys(env).find(key => env[key] && typeof env[key].put === 'function') || 'model';
+        // 自動偵測所有可用的 R2 binding
+        const r2Bindings = Object.keys(env).filter(key => {
+          return env[key] && typeof env[key].put === 'function';
+        });
+        
+        if (r2Bindings.length === 0) {
+          return errorResponse('No R2 buckets available', 500, origin);
+        }
+        
+        // 使用第一個可用的 binding
+        r2Binding = r2Bindings[0];
       }
       
       // 從 R2 獲取檔案列表
@@ -282,6 +360,7 @@ export default {
         size: obj.size,
         uploaded: obj.uploaded.toISOString(),
         etag: obj.etag,
+        bucket: r2Binding,
         httpMetadata: obj.httpMetadata,
         customMetadata: obj.customMetadata
       }));
@@ -290,6 +369,7 @@ export default {
       return new Response(
         JSON.stringify({
           files: files,
+          bucket: r2Binding,
           truncated: listing.truncated,
           cursor: listing.cursor
         }),
@@ -297,13 +377,14 @@ export default {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...getCORSHeaders(request.headers.get('Origin'), ['*'])
+            ...getCORSHeaders(origin, allowedOrigins)
           }
         }
       );
     } catch (error) {
       console.error('List error:', error);
-      return errorResponse(`List failed: ${error.message}`, 500);
+      const origin = request.headers.get('Origin') || '*';
+      return errorResponse(`List failed: ${error.message}`, 500, origin);
     }
   }
 
@@ -312,28 +393,39 @@ export default {
    */
   async function handleBuckets(request, env) {
     try {
+      // 取得請求來源
+      const origin = request.headers.get('Origin') || '*';
+      const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['*'];
+      
       // 找出所有 R2 binding
       const r2Bindings = Object.keys(env).filter(key => {
         return env[key] && typeof env[key].put === 'function';
       });
       
+      // 如果沒有找到任何 R2 binding，返回錯誤
+      if (r2Bindings.length === 0) {
+        return errorResponse('No R2 buckets available', 404, origin);
+      }
+      
       // 回傳儲存空間列表
       return new Response(
         JSON.stringify({
           success: true,
-          buckets: r2Bindings
+          buckets: r2Bindings,
+          default: r2Bindings[0] || null
         }),
         {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...getCORSHeaders(request.headers.get('Origin'), ['*'])
+            ...getCORSHeaders(origin, allowedOrigins)
           }
         }
       );
     } catch (error) {
       console.error('Buckets error:', error);
-      return errorResponse(`Failed to get buckets: ${error.message}`, 500);
+      const origin = request.headers.get('Origin') || '*';
+      return errorResponse(`Failed to get buckets: ${error.message}`, 500, origin);
     }
   }
   
@@ -356,16 +448,30 @@ export default {
    * 取得 CORS 相關頭部
    */
   function getCORSHeaders(origin, allowedOrigins) {
+    // 確保 allowedOrigins 是陣列
+    const origins = Array.isArray(allowedOrigins) ? allowedOrigins : ['*'];
+    
+    // 如果允許所有來源或請求來源在允許列表中
+    if (origins.includes('*') || (origin && origins.includes(origin))) {
+      return {
+        'Access-Control-Allow-Origin': origin || '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Content-Length, X-Requested-With'
+      };
+    }
+    
+    // 默認情況下允許任何來源 (因為我們在配置中使用了 '*')
     return {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': 'true'
+      'Access-Control-Allow-Credentials': 'false'
     };
   }
   
   /**
    * 錯誤回應輔助函式
    */
-  function errorResponse(message, status = 400) {
+  function errorResponse(message, status = 400, origin = '*') {
     return new Response(
       JSON.stringify({
         success: false,
@@ -375,7 +481,9 @@ export default {
         status: status,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, Content-Length, X-Requested-With'
         }
       }
     );

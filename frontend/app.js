@@ -27,8 +27,10 @@ let uploadedBytes = 0;
 let totalBytes = 0;
 let lastUpdateTime = 0;
 let lastUploadedBytes = 0;
+let availableBuckets = [];
+let defaultBucket = '';
 
-  // 初始化
+// 初始化
 document.addEventListener('DOMContentLoaded', () => {
   // 初始化事件監聽器
   initEventListeners();
@@ -48,24 +50,42 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadBuckets() {
   try {
-    const response = await fetch(`${API_URL}/buckets`);
+    console.log('Loading buckets from:', `${API_URL}/buckets`);
+    const response = await fetch(`${API_URL}/buckets`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     
     if (response.ok) {
       const data = await response.json();
+      console.log('Buckets response:', data);
       
       if (data.success && data.buckets && data.buckets.length > 0) {
+        // 儲存可用的 bucket 列表
+        availableBuckets = data.buckets;
+        defaultBucket = data.default || data.buckets[0];
+        
         // 清空現有選項
-        bucketSelect.innerHTML = '<option value="">Default Bucket</option>';
+        bucketSelect.innerHTML = '';
         bucketFilter.innerHTML = '<option value="">All Buckets</option>';
         
         // 添加所有可用的儲存空間選項
         data.buckets.forEach(bucket => {
-          bucketSelect.innerHTML += `<option value="${bucket}">${bucket}</option>`;
+          const isDefault = bucket === defaultBucket;
+          bucketSelect.innerHTML += `<option value="${bucket}" ${isDefault ? 'selected' : ''}>${bucket} ${isDefault ? '(Default)' : ''}</option>`;
           bucketFilter.innerHTML += `<option value="${bucket}">${bucket}</option>`;
         });
+        
+        console.log('Buckets loaded successfully:', availableBuckets);
+      } else {
+        console.warn('No buckets available in response');
       }
     } else {
       console.warn('Failed to load buckets:', response.status);
+      const errorText = await response.text();
+      console.warn('Error response:', errorText);
     }
   } catch (error) {
     console.error('Error loading buckets:', error);
@@ -79,7 +99,15 @@ function initBucketFilters() {
   // Bucket 選擇改變時，重新載入檔案列表
   if (bucketFilter) {
     bucketFilter.addEventListener('change', () => {
+      console.log('Bucket filter changed to:', bucketFilter.value);
       loadFileList();
+    });
+  }
+  
+  // 選擇 bucket 並顯示在上傳區域
+  if (bucketSelect) {
+    bucketSelect.addEventListener('change', () => {
+      console.log('Selected bucket changed to:', bucketSelect.value);
     });
   }
 }
@@ -110,7 +138,7 @@ function initEventListeners() {
     fileInput.click();
   });
   
-// 檔案選擇事件
+  // 檔案選擇事件
   fileInput.addEventListener('change', handleFiles, false);
 
   // 添加資料夾選擇按鈕
@@ -190,6 +218,10 @@ function uploadFile(file) {
   // 添加選擇的 bucket (如果有)
   if (bucketSelect && bucketSelect.value) {
     formData.append('bucket', bucketSelect.value);
+    console.log('Using selected bucket:', bucketSelect.value);
+  } else if (defaultBucket) {
+    formData.append('bucket', defaultBucket);
+    console.log('Using default bucket:', defaultBucket);
   }
   
   // 建立 XHR
@@ -197,29 +229,47 @@ function uploadFile(file) {
   
   // 上傳完成
   xhr.onload = function() {
-    if (xhr.status === 200) {
+    console.log(`Upload completed with status: ${xhr.status}`);
+    
+    if (xhr.status >= 200 && xhr.status < 300) {
       try {
         const result = JSON.parse(xhr.responseText);
+        console.log("Upload response:", result);
+        
         uploadResult.innerHTML = `
           <div class="alert alert-success">
             檔案上傳成功! 
             <a href="${API_URL}${result.url}" target="_blank">查看檔案</a>
+            ${result.bucket ? `<span class="badge bg-info">${result.bucket}</span>` : ''}
           </div>
         `;
         loadFileList();
       } catch (e) {
+        console.warn("Response parsing error:", e, "Raw response:", xhr.responseText);
+        // 即使解析錯誤，如果狀態碼為2xx，我們仍視為成功
+        uploadResult.innerHTML = `
+          <div class="alert alert-success">
+            檔案已上傳成功! (但回應解析失敗)
+          </div>
+        `;
+        loadFileList();
+      }
+    } else {
+      console.error(`Server error response (${xhr.status}):`, xhr.responseText);
+      try {
+        const errorData = JSON.parse(xhr.responseText);
         uploadResult.innerHTML = `
           <div class="alert alert-danger">
-            回應解析錯誤: ${e.message}
+            上傳失敗: ${errorData.error || `伺服器回應 ${xhr.status}`}
+          </div>
+        `;
+      } catch (e) {
+        uploadResult.innerHTML = `
+          <div class="alert alert-danger">
+            上傳失敗: 伺服器回應 ${xhr.status}
           </div>
         `;
       }
-    } else {
-      uploadResult.innerHTML = `
-        <div class="alert alert-danger">
-          上傳失敗: 伺服器回應 ${xhr.status}
-        </div>
-      `;
     }
     
     // 隱藏進度條
@@ -230,10 +280,12 @@ function uploadFile(file) {
   };
   
   // 上傳錯誤
-  xhr.onerror = function() {
+  xhr.onerror = function(e) {
+    console.error("Network error during upload:", e);
+    
     uploadResult.innerHTML = `
       <div class="alert alert-danger">
-        網路錯誤，上傳失敗!
+        網路錯誤，上傳失敗! 請檢查網路連接或 CORS 設定。
       </div>
     `;
     progressContainer.style.display = 'none';
@@ -243,6 +295,7 @@ function uploadFile(file) {
   xhr.upload.onprogress = updateProgress;
   
   // 開始上傳
+  console.log(`Starting upload to ${API_URL}/upload`);
   xhr.open('POST', `${API_URL}/upload`, true);
   xhr.send(formData);
   
@@ -321,10 +374,12 @@ async function loadFileList() {
       listUrl += `?bucket=${encodeURIComponent(selectedBucket)}`;
     }
     
+    console.log(`Loading file list from: ${listUrl}`);
     const response = await fetch(listUrl);
     
     if (response.ok) {
       const data = await response.json();
+      console.log('Files list response:', data);
       
       if (data.files && data.files.length > 0) {
         // 顯示檔案列表
@@ -357,11 +412,26 @@ function displayFileList(files) {
     const isImage = file.httpMetadata && file.httpMetadata.contentType && file.httpMetadata.contentType.startsWith('image/');
     
     if (isImage) {
-      previewHtml = `<img src="${API_URL}/files/${file.name}" class="file-preview" alt="${file.name}" />`;
+      // 構建圖片URL，如果有bucket，添加bucket參數
+      let imgUrl = `${API_URL}/files/${file.name}`;
+      if (file.bucket) {
+        imgUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
+      }
+      
+      previewHtml = `<img src="${imgUrl}" class="file-preview" alt="${file.name}" />`;
     } else {
       // 根據檔案類型顯示圖示
       const fileIcon = getFileIcon(file.name);
       previewHtml = `<div class="file-preview d-flex align-items-center justify-content-center bg-light"><i class="${fileIcon} fs-3"></i></div>`;
+    }
+    
+    // 構建下載 URL，如果有 bucket，添加 bucket 參數
+    let downloadUrl = `${API_URL}/files/${file.name}`;
+    let deleteUrl = `${file.name}`;
+    
+    if (file.bucket) {
+      downloadUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
+      deleteUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
     }
     
     fileItem.innerHTML = `
@@ -370,13 +440,14 @@ function displayFileList(files) {
         <div class="fw-bold text-truncate" style="max-width: 250px;">${file.name}</div>
         <div class="small text-muted">
           ${formatBytes(file.size)} · ${new Date(file.uploaded).toLocaleString()}
+          ${file.bucket ? `<span class="badge bg-info">${file.bucket}</span>` : ''}
         </div>
       </div>
       <div class="file-actions">
-        <a href="${API_URL}/files/${file.name}" target="_blank" class="btn btn-sm btn-outline-primary me-2" title="下載">
+        <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-primary me-2" title="下載">
           <i class="bi bi-download"></i>
         </a>
-        <button class="btn btn-sm btn-outline-danger" title="刪除" onclick="deleteFile('${file.name}')">
+        <button class="btn btn-sm btn-outline-danger" title="刪除" onclick="deleteFile('${deleteUrl}')">
           <i class="bi bi-trash"></i>
         </button>
       </div>
@@ -389,20 +460,15 @@ function displayFileList(files) {
 /**
  * 刪除檔案
  */
-async function deleteFile(fileName) {
-  if (!confirm(`確定要刪除檔案 "${fileName}" 嗎?`)) {
+async function deleteFile(fileQuery) {
+  if (!confirm(`確定要刪除此檔案嗎?`)) {
     return;
   }
   
   try {
-    // 取得選定的 bucket (如果有)
-    const selectedBucket = bucketFilter ? bucketFilter.value : '';
-    
-    // 構建 URL，添加 bucket 參數 (如果有選擇)
-    let deleteUrl = `${API_URL}/files/${fileName}`;
-    if (selectedBucket) {
-      deleteUrl += `?bucket=${encodeURIComponent(selectedBucket)}`;
-    }
+    // fileQuery 已包含檔案名稱和可能的 bucket 參數
+    const deleteUrl = `${API_URL}/files/${fileQuery}`;
+    console.log(`Deleting file: ${deleteUrl}`);
     
     const response = await fetch(deleteUrl, {
       method: 'DELETE'
@@ -568,6 +634,10 @@ async function processFiles(files) {
   progressBar.style.width = '0%';
   fileName.textContent = `正在上傳多個檔案 (0/${totalFiles})`;
   
+  // 選擇的 bucket
+  const selectedBucket = bucketSelect && bucketSelect.value ? bucketSelect.value : defaultBucket;
+  console.log(`Selected bucket for folder upload: ${selectedBucket || 'none'}`);
+  
   // 依序上傳每個檔案
   for (const file of files) {
     try {
@@ -581,8 +651,8 @@ async function processFiles(files) {
       formData.append('fileName', uploadPath); // 使用相對路徑作為檔案名稱
       
       // 添加選擇的 bucket (如果有)
-      if (bucketSelect && bucketSelect.value) {
-        formData.append('bucket', bucketSelect.value);
+      if (selectedBucket) {
+        formData.append('bucket', selectedBucket);
       }
       
       // 使用 Promise 包裝 XHR 以便 await
@@ -590,30 +660,34 @@ async function processFiles(files) {
         const xhr = new XMLHttpRequest();
         
         xhr.onload = function() {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            if (xhr.status === 200 && response.success) {
+          console.log(`File upload ${uploadPath} completed with status: ${xhr.status}`);
+          
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // 200-299 狀態碼都視為成功
+            try {
+              const response = JSON.parse(xhr.responseText);
+              console.log("Upload response:", response);
               resolve(response);
-            } else if (xhr.status === 200) {
-              // 伺服器回應成功但非預期回應
-              console.log("上傳部分成功但回應非預期:", response);
-              resolve(response);
-            } else {
-              reject(new Error(`Server responded with ${xhr.status}`));
-            }
-          } catch (e) {
-            console.warn("Response parsing error:", e, "Raw response:", xhr.responseText);
-            // 即使解析錯誤，如果狀態碼為200，我們仍視為成功
-            if (xhr.status === 200) {
+            } catch (e) {
+              console.warn("Response parsing error:", e, "Raw response:", xhr.responseText);
+              // 即使解析錯誤，如果狀態碼為 2xx，我們仍視為成功
               resolve({success: true, message: "檔案已上傳，但回應解析失敗"});
-            } else {
-              reject(new Error(`回應解析錯誤: ${e.message}`));
+            }
+          } else {
+            // 非 2xx 狀態碼視為錯誤
+            console.error(`Server error (${xhr.status}):`, xhr.responseText);
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.error || `Server responded with ${xhr.status}`));
+            } catch (e) {
+              reject(new Error(`Server responded with ${xhr.status}`));
             }
           }
         };
         
-        xhr.onerror = function() {
-          reject(new Error('Network error'));
+        xhr.onerror = function(e) {
+          console.error("Network error during upload:", e);
+          reject(new Error('網路錯誤，上傳失敗'));
         };
         
         xhr.open('POST', `${API_URL}/upload`, true);
