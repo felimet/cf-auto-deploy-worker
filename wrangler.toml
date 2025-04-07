@@ -1,0 +1,12 @@
+name = "r2-upload-worker"
+main = "src/index.js"
+compatibility_date = "2025-04-07"
+
+# R2 儲存空間設定
+[[r2_buckets]]
+binding = "model"
+bucket_name = "model"
+
+# 環境變數設定
+[vars]
+ALLOWED_ORIGINS = "*"
