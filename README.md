@@ -182,6 +182,6 @@ git push -u origin main
 - 考慮添加檔案類型和大小限制
 - 添加檔案掃描和內容驗證
 
-## 授權
+## LICENSE
 
-MIT 授權
+[MIT LICENSE](LICENSE)
