@@ -39,7 +39,17 @@ export async function loadFileList(prefix = '') {
     }
     
     console.log(`Loading file list from: ${listUrl}`);
-    const response = await fetch(listUrl, addAuthToRequest());
+    const response = await fetch(listUrl, 
+      addAuthToRequest({
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors',
+        credentials: 'same-origin'
+      })
+    );
     
     if (response.ok) {
       const data = await response.json();
@@ -221,9 +231,17 @@ export async function deleteFile(fileQuery) {
     const deleteUrl = `${API_URL}/files/${fileQuery}`;
     console.log(`Deleting file: ${deleteUrl}`);
     
-    const response = await fetch(deleteUrl, addAuthToRequest({
-      method: 'DELETE'
-    }));
+    const response = await fetch(deleteUrl, 
+      addAuthToRequest({
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors',
+        credentials: 'same-origin'
+      })
+    );
     
     if (response.ok) {
       const result = await response.json();

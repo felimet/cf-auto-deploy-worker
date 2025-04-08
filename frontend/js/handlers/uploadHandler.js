@@ -119,11 +119,13 @@ export function uploadFile(file) {
   console.log(`Starting upload to ${API_URL}/upload`);
   xhr.open('POST', `${API_URL}/upload`, true);
   
-  // Add authorization header if token exists
+  // Add headers
   const token = getCurrentToken();
   if (token) {
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
   }
+  xhr.setRequestHeader('Accept', 'application/json');
+  // Don't set Content-Type for FormData, the browser will set it with the correct boundary
   
   xhr.send(formData);
   
@@ -272,11 +274,13 @@ export function processFiles(files) {
           
           xhr.open('POST', `${API_URL}/upload`, true);
           
-          // Add authorization header if token exists
+          // Add headers
           const token = getCurrentToken();
           if (token) {
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
           }
+          xhr.setRequestHeader('Accept', 'application/json');
+          // Don't set Content-Type for FormData, the browser will set it with the correct boundary
           
           xhr.send(formData);
         });

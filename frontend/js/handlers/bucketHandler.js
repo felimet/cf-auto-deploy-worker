@@ -20,8 +20,11 @@ export async function loadBuckets() {
       addAuthToRequest({
         method: 'GET',
         headers: {
-          'Accept': 'application/json'
-        }
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors',
+        credentials: 'same-origin'
       })
     );
     
