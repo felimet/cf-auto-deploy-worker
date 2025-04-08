@@ -1,7 +1,7 @@
 # This is a configuration file for a Cloudflare Workers project using Wrangler.
 # It specifies the project name, compatibility date, and R2 storage settings.
 # For more information, see: https://developers.cloudflare.com/workers/wrangler/
-name = "myWorker"
+name = "myworker"
 main = "src/index.js"
 compatibility_date = "2025-04-06"
 
