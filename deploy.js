@@ -200,8 +200,8 @@ async function updateWranglerConfig() {
   
   return new Promise((resolve) => {
     // Ask for worker name
-    rl.question(`${colors.yellow}Please enter Worker name (default: "myWorker"): ${colors.reset}`, (workerName) => {
-      workerName = workerName.trim() || 'myWorker';
+    rl.question(`${colors.yellow}Please enter Worker name (default: "myWorker"): ${colors.reset}`, (newworkerName) => {
+      workerName = newworkerName.trim() || 'myWorker';
       
       // Ask for binding name
       rl.question(`${colors.yellow}Please enter R2 binding name (default: "${bindingName}"): ${colors.reset}`, (newBindingName) => {
@@ -432,7 +432,7 @@ async function deployToCloudflarePages() {
     // Check if wrangler pages is installed
     exec('wrangler pages project list', (error, stdout, stderr) => {
       // Create Pages project
-      const projectName = `${workerName}-ui-${Math.floor(Math.random() * 10000)}`;
+      const projectName = `cf-${workerName}-ui-${Math.floor(Math.random() * 10000)}`;
       console.log(`${colors.cyan}Creating Pages project: ${projectName}...${colors.reset}`);
       
       exec(`wrangler pages project create ${projectName} --production-branch main`, (err, out, stdErr) => {
