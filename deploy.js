@@ -202,13 +202,13 @@ async function updateWranglerConfig() {
     rl.question(`${colors.yellow}請輸入 Worker 名稱 (預設: "myWorker"): ${colors.reset}`, (workerName) => {
       workerName = workerName.trim() || 'myWorker';
       
-      // 詢問 bucket 名稱
-      rl.question(`${colors.yellow}請輸入 R2 儲存桶名稱 (預設: "${bucketName || 'mybucketname'}"): ${colors.reset}`, (newBucketName) => {
-        bucketName = newBucketName.trim() || bucketName || 'mybucketname';
-        
-        // 詢問 binding 名稱
-        rl.question(`${colors.yellow}請輸入 R2 binding 名稱 (預設: "${bindingName}"): ${colors.reset}`, (newBindingName) => {
-          bindingName = newBindingName.trim() || bindingName;
+      // 詢問 binding 名稱
+      rl.question(`${colors.yellow}請輸入 R2 binding 名稱 (預設: "${bindingName}"): ${colors.reset}`, (newBindingName) => {
+        bindingName = newBindingName.trim() || bindingName;
+
+        // 詢問 bucket 名稱
+        rl.question(`${colors.yellow}請輸入 R2 儲存桶名稱 (預設: "${bucketName || 'mybucketname'}"): ${colors.reset}`, (newBucketName) => {
+          bucketName = newBucketName.trim() || bucketName || 'mybucketname';
           
           // 詢問 Cloudflare 帳戶名稱
           rl.question(`${colors.yellow}請輸入您的 Cloudflare 帳戶名稱 (用於 Worker URL): ${colors.reset}`, (accountName) => {
@@ -321,7 +321,7 @@ async function updateApiUrl() {
   return new Promise((resolve) => {
     try {
       // 讀取 app.js
-      const appJsPath = path.join('frontend', 'app.js');
+      const appJsPath = path.join('frontend', 'js', 'config.js');
       let appJs = fs.readFileSync(appJsPath, 'utf8');
       
       // 更新 API URL
@@ -422,16 +422,7 @@ async function deployToCloudflarePages() {
     // 寫回檔案
     fs.writeFileSync(appJsPath, appJs);
     console.log(`${colors.green}已更新 app.js 中的 API URL 為: ${workerUrl}${colors.reset}`);
-    
-    // 創建 index.html 的副本（如果不存在）
-    const indexHtmlPath = path.join('frontend', 'index.html');
-    const r2UploadHtmlPath = path.join('frontend', 'R2_upload.html');
-    
-    // 如果 R2_upload.html 存在但 index.html 不存在，則複製一份
-    if (fs.existsSync(r2UploadHtmlPath) && !fs.existsSync(indexHtmlPath)) {
-      fs.copyFileSync(r2UploadHtmlPath, indexHtmlPath);
-      console.log(`${colors.green}已創建 index.html 檔案以提高兼容性${colors.reset}`);
-    }
+
   } catch (error) {
     console.error(`${colors.red}更新前端檔案錯誤: ${error.message}${colors.reset}`);
   }
@@ -440,7 +431,7 @@ async function deployToCloudflarePages() {
     // 檢查是否已安裝 wrangler pages
     exec('wrangler pages project list', (error, stdout, stderr) => {
       // 建立 Pages 專案
-      const projectName = `r2-upload-ui-${Math.floor(Math.random() * 10000)}`;
+      const projectName = `ui-${Math.floor(Math.random() * 10000)}`;
       console.log(`${colors.cyan}正在創建 Pages 專案: ${projectName}...${colors.reset}`);
       
       exec(`wrangler pages project create ${projectName} --production-branch main`, (err, out, stdErr) => {
