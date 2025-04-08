@@ -69,7 +69,7 @@ export function initLogin() {
       saveAuthToken(token);
     } else {
       // Set token in session storage only
-      sessionStorage.setItem('r2_upload_temp_token', token);
+      sessionStorage.setItem('temp_token', token);
     }
     
     // Hide modal
@@ -104,15 +104,15 @@ export function initLogin() {
   
   window.logout = () => {
     clearAuthToken();
-    sessionStorage.removeItem('r2_upload_temp_token');
+    sessionStorage.removeItem('temp_token');
     window.location.reload();
   };
   
   // Return information about login state
   return {
-    isLoggedIn: () => !!getAuthToken() || !!sessionStorage.getItem('r2_upload_temp_token'),
+    isLoggedIn: () => !!getAuthToken() || !!sessionStorage.getItem('temp_token'),
     showLoginModal: () => modalInstance.show(),
-    getToken: () => getAuthToken() || sessionStorage.getItem('r2_upload_temp_token') || null
+    getToken: () => getAuthToken() || sessionStorage.getItem('temp_token') || null
   };
 }
 
@@ -121,7 +121,7 @@ export function initLogin() {
  * @returns {string|null} The current token or null if not logged in
  */
 export function getCurrentToken() {
-  return getAuthToken() || sessionStorage.getItem('r2_upload_temp_token') || null;
+  return getAuthToken() || sessionStorage.getItem('temp_token') || null;
 }
 
 /**
