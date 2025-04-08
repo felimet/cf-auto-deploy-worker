@@ -1,12 +1,12 @@
 name = "cfr2-worker"
 main = "src/index.js"
-compatibility_date = "2025-04-07"
+compatibility_date = "yyyy-MM-dd"
 
 # R2 儲存空間設定
 [[r2_buckets]]
-binding = "model"
-bucket_name = "model"
+binding = "mybinding"
+bucket_name = "mybucket"
 
 # 環境變數設定
 [vars]
-ALLOWED_ORIGINS = "cfr2.jmprohub.com"
+ALLOWED_ORIGINS = "*"

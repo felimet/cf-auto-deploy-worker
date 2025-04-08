@@ -13,19 +13,6 @@
 - 拖放式檔案上傳界面
 - 支援模型檔案（.pt、.ckpt、.safetensors 等）
 
-## 專案結構
-
-```
-cf-auto-deploy-worker/
-├── wrangler.toml         # Cloudflare Workers 配置檔案
-├── deploy.js             # 自動部署腳本
-├── src/
-│   └── index.js          # Worker 後端程式碼
-└── frontend/
-    ├── index.html        # 前端 HTML 頁面
-    └── app.js            # 前端 JavaScript
-```
-
 ## 系統需求
 
 - [Node.js](https://nodejs.org/) 14.x 或更高版本
@@ -40,9 +27,6 @@ cf-auto-deploy-worker/
 提供了一個互動式部署腳本，可以引導您完成所有設定和部署步驟：
 
 ```bash
-# 使腳本可執行
-chmod +x deploy.js
-
 # 運行部署腳本
 node deploy.js
 ```
@@ -149,18 +133,6 @@ git push -u origin main
 2. 點擊「瀏覽檔案」或直接拖放檔案到上傳區域
 3. 檔案上傳完成後，會顯示在「已上傳檔案」列表中
 4. 點擊檔案可以下載，或使用刪除按鈕移除檔案
-
-## 自訂設定
-
-### 前端設定
-
-- 修改 `frontend/R2_upload.html` 中的樣式和界面
-- 更新 `frontend/app.js` 中的功能和邏輯
-
-### Worker 設定
-
-- 修改 `src/index.js` 中的請求處理邏輯
-- 調整 `wrangler.toml` 中的環境變數和配置
 
 ## 注意事項
 

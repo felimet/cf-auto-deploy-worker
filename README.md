@@ -136,18 +136,6 @@ Services like Netlify or Vercel follow similar steps.
 3. Once uploaded, files will appear in the “Uploaded Files” list
 4. Click a file to download it, or use the delete button to remove it
 
-## Customization
-
-### Frontend Configuration
-
-- Modify the UI in `frontend/R2_upload.html`
-- Update logic in `frontend/app.js`
-
-### Worker Configuration
-
-- Modify the request-handling logic in `src/index.js`
-- Adjust environment variables and settings in `wrangler.toml`
-
 ## Notes
 
 - By default, all origins are allowed (CORS is set to “*”)—adjust for security as needed
