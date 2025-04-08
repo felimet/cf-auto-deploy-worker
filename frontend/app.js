@@ -4,7 +4,9 @@
  */
 
 // 網址配置
-const API_URL = 'https://cfr2-worker.felimet.workers.dev';  // 請替換為您的 Worker 網址
+// 自動部署將會自動替換這個網址
+// 你可以在 Cloudflare Workers 的設定中找到這個網址
+const API_URL = 'https://your-worker-name.your-account.workers.dev';  
 
 // DOM 元素引用
 const dropArea = document.getElementById('dropArea');
