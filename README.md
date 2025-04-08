@@ -1,6 +1,6 @@
 # Cloudflare R2 File Upload System
 
-**Language**: [[English (US)](README.md)] | [[中文 (zh-TW)](README-zh_TW.md)]
+[[English (US)](README.md)] | [[中文 (zh-TW)](README-zh_TW.md)]
 
 This is a file upload and management system using Cloudflare Workers and R2 storage service. It provides a comprehensive file management solution with no file size limit, making it well-suited for managing large files such as model files.
 
