@@ -4,6 +4,7 @@
 
 import { API_URL } from '../config.js';
 import { loadFileList } from './fileListHandler.js';
+import { addAuthToRequest } from '../components/login.js';
 
 // Default values
 let availableBuckets = [];
@@ -15,12 +16,14 @@ let defaultBucket = '';
 export async function loadBuckets() {
   try {
     console.log('Loading buckets from:', `${API_URL}/buckets`);
-    const response = await fetch(`${API_URL}/buckets`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    const response = await fetch(`${API_URL}/buckets`, 
+      addAuthToRequest({
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+    );
     
     if (response.ok) {
       const data = await response.json();

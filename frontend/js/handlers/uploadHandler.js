@@ -5,6 +5,7 @@
 import { API_URL, APP_CONFIG } from '../config.js';
 import { formatBytes, formatTime } from '../utils/formatters.js';
 import { loadFileList, getCurrentPrefix } from './fileListHandler.js';
+import { getCurrentToken } from '../components/login.js';
 
 // Upload status variables
 let uploadStartTime = 0;
@@ -117,6 +118,13 @@ export function uploadFile(file) {
   // Start upload
   console.log(`Starting upload to ${API_URL}/upload`);
   xhr.open('POST', `${API_URL}/upload`, true);
+  
+  // Add authorization header if token exists
+  const token = getCurrentToken();
+  if (token) {
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+  }
+  
   xhr.send(formData);
   
   // Record start time
@@ -263,6 +271,13 @@ export function processFiles(files) {
           };
           
           xhr.open('POST', `${API_URL}/upload`, true);
+          
+          // Add authorization header if token exists
+          const token = getCurrentToken();
+          if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          }
+          
           xhr.send(formData);
         });
         

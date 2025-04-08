@@ -5,6 +5,7 @@
 import { API_URL } from '../config.js';
 import { getFileIcon, getParentFolder } from '../utils/fileIcons.js';
 import { formatBytes } from '../utils/formatters.js';
+import { addAuthToRequest } from '../components/login.js';
 
 // Variables
 let currentPrefix = '';
@@ -38,7 +39,7 @@ export async function loadFileList(prefix = '') {
     }
     
     console.log(`Loading file list from: ${listUrl}`);
-    const response = await fetch(listUrl);
+    const response = await fetch(listUrl, addAuthToRequest());
     
     if (response.ok) {
       const data = await response.json();
@@ -220,9 +221,9 @@ export async function deleteFile(fileQuery) {
     const deleteUrl = `${API_URL}/files/${fileQuery}`;
     console.log(`Deleting file: ${deleteUrl}`);
     
-    const response = await fetch(deleteUrl, {
+    const response = await fetch(deleteUrl, addAuthToRequest({
       method: 'DELETE'
-    });
+    }));
     
     if (response.ok) {
       const result = await response.json();
