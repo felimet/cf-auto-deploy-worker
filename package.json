@@ -1,0 +1,20 @@
+{
+  "name": "cfr2-manager",
+  "version": "1.0.0",
+  "description": "Cloudflare R2 file upload system with folder support and authentication",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "sass frontend/scss/styles.scss:frontend/css/styles.css --style compressed",
+    "watch": "sass frontend/scss/styles.scss:frontend/css/styles.css --watch",
+    "deploy": "node deploy.js",
+    "dev": "wrangler dev"
+  },
+  "author": "Jia-Ming Zhou",
+  "license": "MIT",
+  "dependencies": {
+    "sass": "^1.69.5"
+  },
+  "devDependencies": {
+    "wrangler": "^3.19.0"
+  }
+}

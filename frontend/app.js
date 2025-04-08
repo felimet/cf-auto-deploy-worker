@@ -4,7 +4,7 @@
  */
 
 // 網址配置
-const API_URL = 'https://r2-upload-worker.felimet.workers.dev';  // 請替換為您的 Worker 網址
+const API_URL = 'https://cfr2-worker.felimet.workers.dev';  // 請替換為您的 Worker 網址
 
 // DOM 元素引用
 const dropArea = document.getElementById('dropArea');
@@ -360,18 +360,34 @@ function resetUploadStatus(file) {
   lastUploadedBytes = 0;
 }
 
+// 目前的導航路徑
+let currentPrefix = '';
+
 /**
  * 載入檔案列表
  */
-async function loadFileList() {
+async function loadFileList(prefix = '') {
   try {
+    // 儲存當前路徑
+    currentPrefix = prefix;
+    
     // 取得選定的 bucket (如果有)
     const selectedBucket = bucketFilter ? bucketFilter.value : '';
     
-    // 構建 URL，添加 bucket 參數 (如果有選擇)
+    // 構建 URL，添加 bucket 和 prefix 參數
     let listUrl = `${API_URL}/list`;
+    const params = new URLSearchParams();
+    
     if (selectedBucket) {
-      listUrl += `?bucket=${encodeURIComponent(selectedBucket)}`;
+      params.append('bucket', selectedBucket);
+    }
+    
+    if (prefix) {
+      params.append('prefix', prefix);
+    }
+    
+    if (params.toString()) {
+      listUrl += `?${params.toString()}`;
     }
     
     console.log(`Loading file list from: ${listUrl}`);
@@ -403,55 +419,139 @@ async function loadFileList() {
 function displayFileList(files) {
   fileList.innerHTML = '';
   
+  // 如果有當前路徑，顯示返回上一層按鈕
+  if (currentPrefix) {
+    const parentFolder = getParentFolder(currentPrefix);
+    const backItem = document.createElement('div');
+    backItem.className = 'file-item cursor-pointer';
+    backItem.onclick = () => loadFileList(parentFolder);
+    
+    backItem.innerHTML = `
+      <div class="file-preview d-flex align-items-center justify-content-center bg-light">
+        <i class="bi bi-arrow-up-circle fs-3"></i>
+      </div>
+      <div class="file-info">
+        <div class="fw-bold">..</div>
+        <div class="small text-muted">返回上一層</div>
+      </div>
+    `;
+    
+    fileList.appendChild(backItem);
+  }
+  
+  // 當前路徑顯示
+  if (currentPrefix) {
+    const pathBar = document.createElement('div');
+    pathBar.className = 'alert alert-secondary d-flex align-items-center mb-3';
+    
+    // 建立路徑導航
+    let pathHtml = `<i class="bi bi-folder me-2"></i> `;
+    let crumbs = [];
+    let path = '';
+    
+    // 加入根目錄
+    crumbs.push(`<span class="path-item" onclick="loadFileList('')">根目錄</span>`);
+    
+    // 加入路徑中的每一層
+    const parts = currentPrefix.split('/').filter(p => p);
+    parts.forEach((part, i) => {
+      path += (i > 0 ? '/' : '') + part;
+      if (i < parts.length - 1) {
+        path += '/';
+        crumbs.push(`<span class="path-item" onclick="loadFileList('${path}')">${part}</span>`);
+      } else {
+        crumbs.push(`<span class="fw-bold">${part}</span>`);
+      }
+    });
+    
+    pathBar.innerHTML = pathHtml + crumbs.join(' / ');
+    fileList.appendChild(pathBar);
+  }
+  
+  // 如果沒有檔案
+  if (files.length === 0) {
+    const emptyMsg = document.createElement('div');
+    emptyMsg.className = 'text-center text-muted my-5';
+    emptyMsg.innerHTML = '此資料夾中沒有檔案';
+    fileList.appendChild(emptyMsg);
+    return;
+  }
+  
+  // 顯示檔案與資料夾
   files.forEach(file => {
     const fileItem = document.createElement('div');
     fileItem.className = 'file-item';
     
-    // 判斷檔案類型，顯示對應的預覽或圖示
-    let previewHtml = '';
-    const isImage = file.httpMetadata && file.httpMetadata.contentType && file.httpMetadata.contentType.startsWith('image/');
-    
-    if (isImage) {
-      // 構建圖片URL，如果有bucket，添加bucket參數
-      let imgUrl = `${API_URL}/files/${file.name}`;
-      if (file.bucket) {
-        imgUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
+    if (file.isFolder) {
+      // 這是資料夾
+      fileItem.className += ' cursor-pointer';
+      fileItem.onclick = () => loadFileList(file.name);
+      
+      const folderName = file.name.split('/').slice(-2)[0];
+      
+      fileItem.innerHTML = `
+        <div class="file-preview d-flex align-items-center justify-content-center bg-light">
+          <i class="bi bi-folder fs-3"></i>
+        </div>
+        <div class="file-info">
+          <div class="fw-bold text-truncate" style="max-width: 250px;">${folderName}/</div>
+          <div class="small text-muted">
+            資料夾
+            ${file.bucket ? `<span class="badge bg-info">${file.bucket}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } else {
+      // 這是檔案
+      // 顯示檔案名稱（不含路徑）
+      const fileName = file.name.split('/').pop();
+      
+      // 判斷檔案類型，顯示對應的預覽或圖示
+      let previewHtml = '';
+      const isImage = file.httpMetadata && file.httpMetadata.contentType && file.httpMetadata.contentType.startsWith('image/');
+      
+      if (isImage) {
+        // 構建圖片URL，如果有bucket，添加bucket參數
+        let imgUrl = `${API_URL}/files/${file.name}`;
+        if (file.bucket) {
+          imgUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
+        }
+        
+        previewHtml = `<img src="${imgUrl}" class="file-preview" alt="${fileName}" />`;
+      } else {
+        // 根據檔案類型顯示圖示
+        const fileIcon = getFileIcon(fileName);
+        previewHtml = `<div class="file-preview d-flex align-items-center justify-content-center bg-light"><i class="${fileIcon} fs-3"></i></div>`;
       }
       
-      previewHtml = `<img src="${imgUrl}" class="file-preview" alt="${file.name}" />`;
-    } else {
-      // 根據檔案類型顯示圖示
-      const fileIcon = getFileIcon(file.name);
-      previewHtml = `<div class="file-preview d-flex align-items-center justify-content-center bg-light"><i class="${fileIcon} fs-3"></i></div>`;
-    }
-    
-    // 構建下載 URL，如果有 bucket，添加 bucket 參數
-    let downloadUrl = `${API_URL}/files/${file.name}`;
-    let deleteUrl = `${file.name}`;
-    
-    if (file.bucket) {
-      downloadUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
-      deleteUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
-    }
-    
-    fileItem.innerHTML = `
-      ${previewHtml}
-      <div class="file-info">
-        <div class="fw-bold text-truncate" style="max-width: 250px;">${file.name}</div>
-        <div class="small text-muted">
-          ${formatBytes(file.size)} · ${new Date(file.uploaded).toLocaleString()}
-          ${file.bucket ? `<span class="badge bg-info">${file.bucket}</span>` : ''}
+      // 構建下載 URL，如果有 bucket，添加 bucket 參數
+      let downloadUrl = `${API_URL}/files/${file.name}`;
+      let deleteUrl = `${file.name}`;
+      
+      if (file.bucket) {
+        downloadUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
+        deleteUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
+      }
+      
+      fileItem.innerHTML = `
+        ${previewHtml}
+        <div class="file-info">
+          <div class="fw-bold text-truncate" style="max-width: 250px;">${fileName}</div>
+          <div class="small text-muted">
+            ${formatBytes(file.size)} · ${new Date(file.uploaded).toLocaleString()}
+            ${file.bucket ? `<span class="badge bg-info">${file.bucket}</span>` : ''}
+          </div>
         </div>
-      </div>
-      <div class="file-actions">
-        <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-primary me-2" title="下載">
-          <i class="bi bi-download"></i>
-        </a>
-        <button class="btn btn-sm btn-outline-danger" title="刪除" onclick="deleteFile('${deleteUrl}')">
-          <i class="bi bi-trash"></i>
-        </button>
-      </div>
-    `;
+        <div class="file-actions">
+          <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-primary me-2" title="下載">
+            <i class="bi bi-download"></i>
+          </a>
+          <button class="btn btn-sm btn-outline-danger" title="刪除" onclick="deleteFile('${deleteUrl}')">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      `;
+    }
     
     fileList.appendChild(fileItem);
   });
@@ -641,14 +741,17 @@ async function processFiles(files) {
   // 依序上傳每個檔案
   for (const file of files) {
     try {
-      // 獲取相對路徑 (移除 webkitRelativePath 的第一個資料夾名稱)
-      const relativePath = file.webkitRelativePath.split('/').slice(1).join('/');
-      const uploadPath = relativePath ? relativePath : file.name;
+      // 獲取完整路徑，包括資料夾結構
+      // 注意：這裡我們保留原始資料夾結構，而不是移除第一個資料夾名稱
+      const folderPath = file.webkitRelativePath || '';
+      
+      // 如果沒有資料夾路徑，則使用檔案名稱
+      const uploadPath = folderPath ? folderPath : file.name;
       
       // 準備 FormData
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('fileName', uploadPath); // 使用相對路徑作為檔案名稱
+      formData.append('fileName', uploadPath); // 使用完整路徑作為檔案名稱
       
       // 添加選擇的 bucket (如果有)
       if (selectedBucket) {
@@ -758,6 +861,29 @@ function showErrorDetails() {
   }
 }
 
+/**
+ * 獲取父資料夾路徑
+ */
+function getParentFolder(path) {
+  if (!path) return '';
+  
+  // 移除尾部斜線（如果有）
+  let cleanPath = path;
+  if (cleanPath.endsWith('/')) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
+  
+  // 找最後一個斜線
+  const lastSlashIndex = cleanPath.lastIndexOf('/');
+  if (lastSlashIndex === -1) {
+    return ''; // 如果沒有斜線，返回根目錄
+  }
+  
+  // 返回父資料夾路徑
+  return cleanPath.substring(0, lastSlashIndex + 1);
+}
+
 // 全域函式
 window.deleteFile = deleteFile;
 window.showErrorDetails = showErrorDetails;
+window.loadFileList = loadFileList; // 添加到全域，以支持資料夾導航
