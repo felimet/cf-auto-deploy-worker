@@ -3,7 +3,7 @@
  */
 
 // Storage key for auth token
-const AUTH_TOKEN_KEY = 'r2_upload_auth_token';
+const AUTH_TOKEN_KEY = 'auth_token';
 
 /**
  * Save authentication token to localStorage
