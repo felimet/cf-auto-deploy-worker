@@ -409,19 +409,19 @@ async function deployToCloudflarePages() {
   console.log(`${colors.cyan}Updating API URL in frontend files...${colors.reset}`);
   
   try {
-    // Ensure API_URL is set correctly in app.js
-    const appJsPath = path.join('frontend', 'app.js');
-    let appJs = fs.readFileSync(appJsPath, 'utf8');
+    // Ensure API_URL is set correctly in config.js
+    const configJsPath = path.join('frontend', 'js', 'config.js');
+    let configJs = fs.readFileSync(configJsPath, 'utf8');
     
     // Use regex to replace any existing API_URL setting
-    appJs = appJs.replace(
+    configJs = configJs.replace(
       /const API_URL = ['"].*?['"];/,
       `const API_URL = '${workerUrl}';`
     );
     
     // Write back to file
-    fs.writeFileSync(appJsPath, appJs);
-    console.log(`${colors.green}Updated API URL in app.js to: ${workerUrl}${colors.reset}`);
+    fs.writeFileSync(configJsPath, configJs);
+    console.log(`${colors.green}Updated API URL in config.js to: ${workerUrl}${colors.reset}`);
 
   } catch (error) {
     console.error(`${colors.red}Error updating frontend files: ${error.message}${colors.reset}`);
@@ -431,7 +431,7 @@ async function deployToCloudflarePages() {
     // Check if wrangler pages is installed
     exec('wrangler pages project list', (error, stdout, stderr) => {
       // Create Pages project
-      const projectName = `ui-${Math.floor(Math.random() * 10000)}`;
+      const projectName = `${workerName}-ui-${Math.floor(Math.random() * 10000)}`;
       console.log(`${colors.cyan}Creating Pages project: ${projectName}...${colors.reset}`);
       
       exec(`wrangler pages project create ${projectName} --production-branch main`, (err, out, stdErr) => {

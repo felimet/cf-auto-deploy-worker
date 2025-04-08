@@ -5,7 +5,7 @@
 // API URL configuration
 // Automatic deployment mode will automatically replace this URL
 // You can find this URL in the Cloudflare Workers settings
-export const API_URL = 'https://r2-upload-worker.felimet.workers.dev';
+export const API_URL = 'https:///your-worker-name.your-account.workers.dev';
 
 // Global application configuration
 export const APP_CONFIG = {
