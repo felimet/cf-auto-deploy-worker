@@ -4,7 +4,7 @@
  */
 
 // 網址配置
-const API_URL = 'https://r2-upload-worker.felimet.workers.dev';  // 請替換為您的 Worker 網址
+const API_URL = 'https://cfr2-worker.felimet.workers.dev';  // 請替換為您的 Worker 網址
 
 // DOM 元素引用
 const dropArea = document.getElementById('dropArea');

@@ -1,4 +1,4 @@
-name = "r2-upload-worker"
+name = "cfr2-worker"
 main = "src/index.js"
 compatibility_date = "2025-04-07"
 
@@ -9,4 +9,4 @@ bucket_name = "model"
 
 # 環境變數設定
 [vars]
-ALLOWED_ORIGINS = "*"
+ALLOWED_ORIGINS = "cfr2.jmprohub.com"
