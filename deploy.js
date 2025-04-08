@@ -539,7 +539,7 @@ ${colors.yellow}You can use this upload system directly on your local machine:
 
 1. Open ${colors.bright}frontend/index.html${colors.reset}${colors.yellow} directly in your browser
 
-2. Make sure the API_URL in ${colors.bright}frontend/app.js${colors.reset}${colors.yellow} is correctly set to:
+2. Make sure the API_URL in ${colors.bright}frontend/js/config.js${colors.reset}${colors.yellow} is correctly set to:
    ${colors.bright}${workerUrl}${colors.reset}
 
 3. Due to CORS restrictions, you may need to use a local development server to serve these files.
