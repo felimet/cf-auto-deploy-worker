@@ -120,7 +120,7 @@ wrangler deploy
 
 **注意**：直接開啟 HTML 檔案時，請確保在 app.js 中的 API_URL 指向正確的 Worker URL：
 ```javascript
-const API_URL = 'https://r2-upload-worker.workers.dev'; // 修改為您的 Worker URL
+const API_URL = 'https://your-worker-name.your-account.workers.dev'; // 修改為您的 Worker URL
 ```
 
 ### 2. 使用 GitHub Pages（靜態）或其他網站託管

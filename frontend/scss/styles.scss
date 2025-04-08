@@ -1,0 +1,78 @@
+// Import variables
+@import 'variables';
+
+// Main styles for R2 file upload client
+
+.upload-area {
+  border: 2px dashed $light-gray;
+  border-radius: $border-radius;
+  padding: $spacing-standard;
+  text-align: center;
+  margin-bottom: $spacing-standard;
+  transition: all 0.3s;
+  
+  &.highlight {
+    border-color: $primary-color;
+    background-color: $background-light;
+  }
+}
+
+.progress-container {
+  margin-top: 15px;
+  display: none;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-small;
+  padding: $spacing-small;
+  border: 1px solid $dark-gray;
+  border-radius: $border-radius-sm;
+}
+
+.file-info {
+  flex-grow: 1;
+  margin-left: $spacing-small;
+}
+
+.file-actions {
+  display: flex;
+}
+
+.file-preview {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: $border-radius-sm;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.path-item {
+  cursor: pointer;
+  color: $primary-color;
+  text-decoration: underline;
+  
+  &:hover {
+    color: $primary-color-dark;
+  }
+}
+
+// Auth toolbar styles
+.auth-toolbar {
+  margin-bottom: $spacing-standard;
+}
+
+// Login modal custom styles
+.login-container {
+  .modal-header {
+    border-bottom: 1px solid $dark-gray;
+  }
+  
+  .modal-footer {
+    border-top: 1px solid $dark-gray;
+  }
+}
