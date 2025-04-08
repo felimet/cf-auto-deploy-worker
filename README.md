@@ -29,9 +29,6 @@ This is a file upload and management system using Cloudflare Workers and R2 stor
 An interactive deployment script is provided to guide you through all setup and deployment steps:
 
 ```bash
-# Make the script executable
-chmod +x deploy.js
-
 # Run the deployment script
 node deploy.js
 ```
