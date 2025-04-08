@@ -32,7 +32,8 @@ const colors = {
 let accountId = '';
 let workerUrl = '';
 let frontendUrl = 'http://localhost:8000';
-let bucketName = '';
+let workerName = ''; // New: customizable worker name
+let bucketName = ''; // New: customizable bucket name
 let bindingName = ''; // New: customizable binding name
 
 // Welcome message
