@@ -1,9 +1,9 @@
 /**
- * 各種格式化用的公用函數
+ * Various formatting utility functions
  */
 
 /**
- * 格式化位元組單位
+ * Format byte units
  */
 export function formatBytes(bytes, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
@@ -18,18 +18,18 @@ export function formatBytes(bytes, decimals = 2) {
 }
 
 /**
- * 格式化時間
+ * Format time
  */
 export function formatTime(seconds) {
   if (seconds < 60) {
-    return `${seconds} 秒`;
+    return `${seconds} sec`;
   } else if (seconds < 3600) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes} 分 ${remainingSeconds} 秒`;
+    return `${minutes} min ${remainingSeconds} sec`;
   } else {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours} 時 ${minutes} 分`;
+    return `${hours} hr ${minutes} min`;
   }
 }

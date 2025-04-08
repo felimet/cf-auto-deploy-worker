@@ -100,7 +100,7 @@ function addAuthToolbar() {
 }
 
 /**
- * 初始化 DOM 元素引用
+ * Initialize DOM element references
  */
 function initDOMReferences() {
   dropArea = document.getElementById('dropArea');
@@ -110,15 +110,15 @@ function initDOMReferences() {
 }
 
 /**
- * 初始化所有事件監聽器
+ * Initialize all event listeners
  */
 function initEventListeners() {
-  // 拖放區域事件
+  // Drag and drop area events
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropArea.addEventListener(eventName, preventDefaults, false);
   });
   
-  // 拖放區域高亮
+  // Drag area highlight
   ['dragenter', 'dragover'].forEach(eventName => {
     dropArea.addEventListener(eventName, highlight, false);
   });
@@ -127,18 +127,18 @@ function initEventListeners() {
     dropArea.addEventListener(eventName, unhighlight, false);
   });
   
-  // 處理檔案拖放
+  // Handle file drop
   dropArea.addEventListener('drop', handleDrop, false);
   
-  // 檔案選擇按鈕
+  // File selection button
   browseButton.addEventListener('click', () => {
     fileInput.click();
   });
   
-  // 檔案選擇事件
+  // File selection event
   fileInput.addEventListener('change', handleFiles, false);
 
-  // 添加資料夾選擇按鈕
+  // Add folder selection button
   if (folderButton) {
     folderButton.addEventListener('click', () => {
       const folderInput = document.createElement('input');
@@ -155,7 +155,7 @@ function initEventListeners() {
 }
 
 /**
- * 防止預設拖放行為
+ * Prevent default drag and drop behavior
  */
 function preventDefaults(e) {
   e.preventDefault();
@@ -163,21 +163,21 @@ function preventDefaults(e) {
 }
 
 /**
- * 拖放區域高亮
+ * Highlight drop area
  */
 function highlight() {
   dropArea.classList.add('highlight');
 }
 
 /**
- * 拖放區域取消高亮
+ * Remove highlight from drop area
  */
 function unhighlight() {
   dropArea.classList.remove('highlight');
 }
 
 /**
- * 處理檔案拖放
+ * Handle file drop
  */
 function handleDrop(e) {
   const dt = e.dataTransfer;
@@ -186,39 +186,39 @@ function handleDrop(e) {
 }
 
 /**
- * 處理選取的檔案
+ * Handle selected files
  */
 function handleFiles(e) {
   const files = e.target.files;
   if (files.length > 0) {
-    // 在本例中僅處理一個檔案
+    // In this example, only process one file
     uploadFile(files[0]);
   }
 }
 
 /**
- * 處理資料夾選擇
+ * Handle folder selection
  */
 function handleFolderSelect(e) {
   const files = e.target.files;
   if (files.length > 0) {
-    // 顯示上傳中訊息
+    // Show upload message
     const uploadResult = document.getElementById('uploadResult');
     uploadResult.innerHTML = `
       <div class="alert alert-info">
-        準備上傳 ${files.length} 個檔案...
+        Preparing to upload ${files.length} files...
       </div>
     `;
     
-    // 處理資料夾結構，保留相對路徑
+    // Process folder structure, preserve relative paths
     processFiles(files);
   }
   
-  // 清除DOM中的暫時元素
+  // Remove temporary element from DOM
   e.target.remove();
 }
 
-// 將功能導出到全域使用
+// Export functions for global use
 window.deleteFile = deleteFile;
 window.showErrorDetails = showErrorDetails; 
-window.loadFileList = loadFileList; // 支援資料夾導航
+window.loadFileList = loadFileList; // Support folder navigation

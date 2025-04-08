@@ -1,27 +1,27 @@
 /**
- * 檔案列表處理模組
+ * File List Handler Module
  */
 
 import { API_URL } from '../config.js';
 import { getFileIcon, getParentFolder } from '../utils/fileIcons.js';
 import { formatBytes } from '../utils/formatters.js';
 
-// 變數
+// Variables
 let currentPrefix = '';
 
 /**
- * 載入檔案列表
+ * Load file list
  */
 export async function loadFileList(prefix = '') {
   try {
-    // 儲存當前路徑
+    // Save current path
     currentPrefix = prefix;
     
-    // 取得選定的 bucket (如果有)
+    // Get selected bucket (if any)
     const bucketFilter = document.getElementById('bucketFilter');
     const selectedBucket = bucketFilter ? bucketFilter.value : '';
     
-    // 構建 URL，添加 bucket 和 prefix 參數
+    // Build URL, add bucket and prefix parameters
     let listUrl = `${API_URL}/list`;
     const params = new URLSearchParams();
     
@@ -45,31 +45,31 @@ export async function loadFileList(prefix = '') {
       console.log('Files list response:', data);
       
       if (data.files && data.files.length > 0) {
-        // 顯示檔案列表
+      // Display file list
         displayFileList(data.files);
       } else {
-        // 無檔案
+        // No files
         const fileList = document.getElementById('fileList');
-        fileList.innerHTML = '<div class="text-center text-muted">無已上傳檔案</div>';
+        fileList.innerHTML = '<div class="text-center text-muted">No uploaded files</div>';
       }
     } else {
-      throw new Error(`獲取檔案列表失敗: ${response.status}`);
+      throw new Error(`Failed to get file list: ${response.status}`);
     }
   } catch (error) {
-    console.error('載入檔案列表錯誤:', error);
+    console.error('Error loading file list:', error);
     const fileList = document.getElementById('fileList');
-    fileList.innerHTML = `<div class="text-center text-danger">無法載入檔案列表: ${error.message}</div>`;
+    fileList.innerHTML = `<div class="text-center text-danger">Unable to load file list: ${error.message}</div>`;
   }
 }
 
 /**
- * 顯示檔案列表
+ * Display file list
  */
 function displayFileList(files) {
   const fileList = document.getElementById('fileList');
   fileList.innerHTML = '';
   
-  // 如果有當前路徑，顯示返回上一層按鈕
+  // If there is a current path, show back button
   if (currentPrefix) {
     const parentFolder = getParentFolder(currentPrefix);
     const backItem = document.createElement('div');
@@ -82,27 +82,27 @@ function displayFileList(files) {
       </div>
       <div class="file-info">
         <div class="fw-bold">..</div>
-        <div class="small text-muted">返回上一層</div>
+        <div class="small text-muted">Back to parent folder</div>
       </div>
     `;
     
     fileList.appendChild(backItem);
   }
   
-  // 當前路徑顯示
+  // Current path display
   if (currentPrefix) {
     const pathBar = document.createElement('div');
     pathBar.className = 'alert alert-secondary d-flex align-items-center mb-3';
     
-    // 建立路徑導航
+    // Create path navigation
     let pathHtml = `<i class="bi bi-folder me-2"></i> `;
     let crumbs = [];
     let path = '';
     
-    // 加入根目錄
-    crumbs.push(`<span class="path-item" onclick="loadFileList('')">根目錄</span>`);
+    // Add root directory
+    crumbs.push(`<span class="path-item" onclick="loadFileList('')">Root</span>`);
     
-    // 加入路徑中的每一層
+    // Add each level in the path
     const parts = currentPrefix.split('/').filter(p => p);
     parts.forEach((part, i) => {
       path += (i > 0 ? '/' : '') + part;
@@ -118,22 +118,22 @@ function displayFileList(files) {
     fileList.appendChild(pathBar);
   }
   
-  // 如果沒有檔案
+  // If there are no files
   if (files.length === 0) {
     const emptyMsg = document.createElement('div');
     emptyMsg.className = 'text-center text-muted my-5';
-    emptyMsg.innerHTML = '此資料夾中沒有檔案';
+    emptyMsg.innerHTML = 'No files in this folder';
     fileList.appendChild(emptyMsg);
     return;
   }
   
-  // 顯示檔案與資料夾
+  // Display files and folders
   files.forEach(file => {
     const fileItem = document.createElement('div');
     fileItem.className = 'file-item';
     
     if (file.isFolder) {
-      // 這是資料夾
+      // This is a folder
       fileItem.className += ' cursor-pointer';
       fileItem.onclick = () => loadFileList(file.name);
       
@@ -146,22 +146,22 @@ function displayFileList(files) {
         <div class="file-info">
           <div class="fw-bold text-truncate" style="max-width: 250px;">${folderName}/</div>
           <div class="small text-muted">
-            資料夾
+            Folder
             ${file.bucket ? `<span class="badge bg-info">${file.bucket}</span>` : ''}
           </div>
         </div>
       `;
     } else {
-      // 這是檔案
-      // 顯示檔案名稱（不含路徑）
+      // This is a file
+      // Display file name (without path)
       const fileName = file.name.split('/').pop();
       
-      // 判斷檔案類型，顯示對應的預覽或圖示
+      // Determine file type, show corresponding preview or icon
       let previewHtml = '';
       const isImage = file.httpMetadata && file.httpMetadata.contentType && file.httpMetadata.contentType.startsWith('image/');
       
       if (isImage) {
-        // 構建圖片URL，如果有bucket，添加bucket參數
+      // Build image URL, add bucket parameter if available
         let imgUrl = `${API_URL}/files/${file.name}`;
         if (file.bucket) {
           imgUrl += `?bucket=${encodeURIComponent(file.bucket)}`;
@@ -169,12 +169,12 @@ function displayFileList(files) {
         
         previewHtml = `<img src="${imgUrl}" class="file-preview" alt="${fileName}" />`;
       } else {
-        // 根據檔案類型顯示圖示
+        // Show icon based on file type
         const fileIcon = getFileIcon(fileName);
         previewHtml = `<div class="file-preview d-flex align-items-center justify-content-center bg-light"><i class="${fileIcon} fs-3"></i></div>`;
       }
       
-      // 構建下載 URL，如果有 bucket，添加 bucket 參數
+      // Build download URL, add bucket parameter if available
       let downloadUrl = `${API_URL}/files/${file.name}`;
       let deleteUrl = `${file.name}`;
       
@@ -193,10 +193,10 @@ function displayFileList(files) {
           </div>
         </div>
         <div class="file-actions">
-          <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-primary me-2" title="下載">
+          <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-primary me-2" title="Download">
             <i class="bi bi-download"></i>
           </a>
-          <button class="btn btn-sm btn-outline-danger" title="刪除" onclick="deleteFile('${deleteUrl}')">
+          <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteFile('${deleteUrl}')">
             <i class="bi bi-trash"></i>
           </button>
         </div>
@@ -208,15 +208,15 @@ function displayFileList(files) {
 }
 
 /**
- * 刪除檔案
+ * Delete file
  */
 export async function deleteFile(fileQuery) {
-  if (!confirm(`確定要刪除此檔案嗎?`)) {
+  if (!confirm(`Are you sure you want to delete this file?`)) {
     return;
   }
   
   try {
-    // fileQuery 已包含檔案名稱和可能的 bucket 參數
+    // fileQuery already contains file name and possible bucket parameter
     const deleteUrl = `${API_URL}/files/${fileQuery}`;
     console.log(`Deleting file: ${deleteUrl}`);
     
@@ -228,35 +228,35 @@ export async function deleteFile(fileQuery) {
       const result = await response.json();
       
       if (result.success) {
-        // 重新載入檔案列表
+      // Reload file list
         loadFileList(currentPrefix);
         
-        // 顯示成功訊息
+      // Show success message
         const uploadResult = document.getElementById('uploadResult');
         uploadResult.innerHTML = `
           <div class="alert alert-success">
-            檔案已成功刪除!
+            File successfully deleted!
           </div>
         `;
       } else {
-        throw new Error(result.error || '刪除失敗');
+        throw new Error(result.error || 'Delete failed');
       }
     } else {
-      throw new Error(`刪除失敗: ${response.status}`);
+      throw new Error(`Delete failed: ${response.status}`);
     }
   } catch (error) {
-    console.error('刪除錯誤:', error);
+    console.error('Delete error:', error);
     const uploadResult = document.getElementById('uploadResult');
     uploadResult.innerHTML = `
       <div class="alert alert-danger">
-        刪除失敗: ${error.message}
+        Delete failed: ${error.message}
       </div>
     `;
   }
 }
 
 /**
- * 顯示錯誤詳情
+ * Show error details
  */
 export function showErrorDetails() {
   if (window.uploadErrors && window.uploadErrors.length > 0) {
@@ -271,15 +271,15 @@ export function showErrorDetails() {
     const uploadResult = document.getElementById('uploadResult');
     uploadResult.innerHTML = `
       <div class="alert alert-danger">
-        上傳失敗的檔案:
+        Files that failed to upload:
         ${errorDetails}
-        <button class="btn btn-sm btn-primary mt-2" onclick="loadFileList('${currentPrefix}')">返回</button>
+        <button class="btn btn-sm btn-primary mt-2" onclick="loadFileList('${currentPrefix}')">Back</button>
       </div>
     `;
   }
 }
 
-// 返回當前路徑
+// Return current path
 export function getCurrentPrefix() {
   return currentPrefix;
 }

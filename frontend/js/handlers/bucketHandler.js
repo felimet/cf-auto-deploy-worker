@@ -1,16 +1,16 @@
 /**
- * 儲存空間處理模組
+ * Bucket Handler Module
  */
 
 import { API_URL } from '../config.js';
 import { loadFileList } from './fileListHandler.js';
 
-// 預設值
+// Default values
 let availableBuckets = [];
 let defaultBucket = '';
 
 /**
- * 載入可用的 R2 儲存空間
+ * Load available R2 buckets
  */
 export async function loadBuckets() {
   try {
@@ -27,19 +27,19 @@ export async function loadBuckets() {
       console.log('Buckets response:', data);
       
       if (data.success && data.buckets && data.buckets.length > 0) {
-        // 儲存可用的 bucket 列表
+        // Store available bucket list
         availableBuckets = data.buckets;
         defaultBucket = data.default || data.buckets[0];
         
-        // 取得 DOM 元素
+        // Get DOM elements
         const bucketSelect = document.getElementById('bucketSelect');
         const bucketFilter = document.getElementById('bucketFilter');
         
-        // 清空現有選項
+        // Clear existing options
         bucketSelect.innerHTML = '';
         bucketFilter.innerHTML = '<option value="">All Buckets</option>';
         
-        // 添加所有可用的儲存空間選項
+        // Add all available bucket options
         data.buckets.forEach(bucket => {
           const isDefault = bucket === defaultBucket;
           bucketSelect.innerHTML += `<option value="${bucket}" ${isDefault ? 'selected' : ''}>${bucket} ${isDefault ? '(Default)' : ''}</option>`;
@@ -48,7 +48,7 @@ export async function loadBuckets() {
         
         console.log('Buckets loaded successfully:', availableBuckets);
         
-        // 初始化事件監聽器
+        // Initialize event listeners
         initBucketFilters();
         
         return {
@@ -82,14 +82,14 @@ export async function loadBuckets() {
 }
 
 /**
- * 初始化 bucket 過濾和選擇功能
+ * Initialize bucket filtering and selection functionality
  */
 function initBucketFilters() {
-  // 取得 DOM 元素
+  // Get DOM elements
   const bucketFilter = document.getElementById('bucketFilter');
   const bucketSelect = document.getElementById('bucketSelect');
   
-  // Bucket 選擇改變時，重新載入檔案列表
+  // When bucket selection changes, reload file list
   if (bucketFilter) {
     bucketFilter.addEventListener('change', () => {
       console.log('Bucket filter changed to:', bucketFilter.value);
@@ -97,7 +97,7 @@ function initBucketFilters() {
     });
   }
   
-  // 選擇 bucket 並顯示在上傳區域
+  // Select bucket and show in upload area
   if (bucketSelect) {
     bucketSelect.addEventListener('change', () => {
       console.log('Selected bucket changed to:', bucketSelect.value);
@@ -106,14 +106,14 @@ function initBucketFilters() {
 }
 
 /**
- * 獲取預設的 bucket
+ * Get default bucket
  */
 export function getDefaultBucket() {
   return defaultBucket;
 }
 
 /**
- * 獲取所有可用的 buckets
+ * Get all available buckets
  */
 export function getAvailableBuckets() {
   return availableBuckets;

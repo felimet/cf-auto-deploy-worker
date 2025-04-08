@@ -1,16 +1,16 @@
 /**
- * 檔案圖示相關的公用函數
+ * File icon utility functions
  */
 
 /**
- * 根據檔案名稱取得對應圖示
- * 需要引入 Bootstrap Icons
+ * Get corresponding icon based on filename
+ * Requires Bootstrap Icons
  */
 export function getFileIcon(fileName) {
   const ext = fileName.split('.').pop().toLowerCase();
   
   const iconMap = {
-    // 文件
+    // Documents
     'pdf': 'bi bi-file-earmark-pdf',
     'doc': 'bi bi-file-earmark-word',
     'docx': 'bi bi-file-earmark-word',
@@ -21,7 +21,7 @@ export function getFileIcon(fileName) {
     'txt': 'bi bi-file-earmark-text',
     'csv': 'bi bi-file-earmark-spreadsheet',
     
-    // 圖片
+    // Images
     'jpg': 'bi bi-file-earmark-image',
     'jpeg': 'bi bi-file-earmark-image',
     'png': 'bi bi-file-earmark-image',
@@ -31,10 +31,10 @@ export function getFileIcon(fileName) {
     'tiff': 'bi bi-file-earmark-image',
     'bmp': 'bi bi-file-earmark-image',
     
-    // 影片
+    // Videos
     'mp4': 'bi bi-file-earmark-play',
     
-    // 程式碼
+    // Code
     'html': 'bi bi-file-earmark-code',
     'css': 'bi bi-file-earmark-code',
     'js': 'bi bi-file-earmark-code',
@@ -43,15 +43,15 @@ export function getFileIcon(fileName) {
     'py': 'bi bi-file-earmark-code',
     'cpp': 'bi bi-file-earmark-code',
     'cs': 'bi bi-file-earmark-code',
-    'm': 'bi bi-file-earmark-code',  // MATLAB 程式碼
+    'm': 'bi bi-file-earmark-code',  // MATLAB code
     
-    // 壓縮檔
+    // Compressed files
     'zip': 'bi bi-file-earmark-zip',
     'rar': 'bi bi-file-earmark-zip',
     'tar': 'bi bi-file-earmark-zip',
     'gz': 'bi bi-file-earmark-zip',
     
-    // 模型檔案
+    // Model files
     'pt': 'bi bi-file-earmark-binary',
     'pth': 'bi bi-file-earmark-binary',
     'onnx': 'bi bi-file-earmark-binary',
@@ -60,31 +60,31 @@ export function getFileIcon(fileName) {
     'pb': 'bi bi-file-earmark-binary',
     'safetensors': 'bi bi-file-earmark-binary',
     'ckpt': 'bi bi-file-earmark-binary',
-    'mat': 'bi bi-file-earmark-binary',  // MATLAB 數據檔案
-    'gguf': 'bi bi-file-earmark-binary', // GGUF AI模型檔案
+    'mat': 'bi bi-file-earmark-binary',  // MATLAB data file
+    'gguf': 'bi bi-file-earmark-binary', // GGUF AI model file
   };
   
   return iconMap[ext] || 'bi bi-file-earmark';
 }
 
 /**
- * 獲取父資料夾路徑
+ * Get parent folder path
  */
 export function getParentFolder(path) {
   if (!path) return '';
   
-  // 移除尾部斜線（如果有）
+  // Remove trailing slash (if any)
   let cleanPath = path;
   if (cleanPath.endsWith('/')) {
     cleanPath = cleanPath.slice(0, -1);
   }
   
-  // 找最後一個斜線
+  // Find the last slash
   const lastSlashIndex = cleanPath.lastIndexOf('/');
   if (lastSlashIndex === -1) {
-    return ''; // 如果沒有斜線，返回根目錄
+    return ''; // If no slash, return root directory
   }
   
-  // 返回父資料夾路徑
+  // Return parent folder path
   return cleanPath.substring(0, lastSlashIndex + 1);
 }

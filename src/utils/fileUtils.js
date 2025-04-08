@@ -1,21 +1,21 @@
 /**
- * 檔案相關公用函數
+ * File-related utility functions
  */
 
 /**
- * 淨化檔案名稱
+ * Sanitize file name
  */
 function sanitizeFileName(fileName) {
   if (!fileName) return '';
-  // 移除檔案名稱中的特殊字元，僅保留安全字元
+  // Remove special characters from file name, keep only safe characters
   return fileName
-    .replace(/[\\:*?"<>|]/g, '_')  // 替換不合法的檔案系統字元，但允許 '/'
-    .replace(/\.\./g, '_')         // 防止目錄穿越
+    .replace(/[\\:*?"<>|]/g, '_')  // Replace illegal file system characters, but allow '/'
+    .replace(/\.\./g, '_')         // Prevent directory traversal
     .trim();
 }
 
 /**
- * 從檔案名稱取得副檔名
+ * Get file extension from file name
  */
 function getFileExtension(fileName) {
   if (!fileName) return '';
@@ -24,17 +24,23 @@ function getFileExtension(fileName) {
 }
 
 /**
- * 從檔案名稱取得內容類型
+ * Get content type from file name
  */
 function getContentTypeFromFileName(fileName) {
   const ext = getFileExtension(fileName);
   const contentTypes = {
-    // 文件類型
+    // Document types
     'pdf': 'application/pdf',
     'txt': 'text/plain',
     'csv': 'text/csv',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'ppt': 'application/vnd.ms-powerpoint',
+    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     
-    // 圖片類型
+    // Image types
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
     'png': 'image/png',
@@ -44,10 +50,10 @@ function getContentTypeFromFileName(fileName) {
     'tiff': 'image/tiff',
     'bmp': 'image/bmp',
     
-    // 影片類型
+    // Video types
     'mp4': 'video/mp4',
     
-    // 程式碼類型
+    // Code types
     'html': 'text/html',
     'css': 'text/css',
     'js': 'application/javascript',
@@ -55,28 +61,36 @@ function getContentTypeFromFileName(fileName) {
     'xml': 'application/xml',
     'cpp': 'text/x-c++src',
     'cs': 'text/x-csharp',
-    'm': 'text/x-matlab',   // MATLAB 程式碼檔案
+    'm': 'text/x-matlab',   // MATLAB code file
     
-    // 壓縮檔
+    // Compressed files
     'zip': 'application/zip',
-    
-    // 二進位/模型檔案
-    'pt': 'application/octet-stream',     // PyTorch 模型檔案
-    'pth': 'application/octet-stream',    // PyTorch 模型檔案
-    'onnx': 'application/octet-stream',   // ONNX 模型檔案
-    'bin': 'application/octet-stream',    // 二進位檔案
-    'h5': 'application/octet-stream',     // HDF5 模型檔案
-    'pb': 'application/octet-stream',     // TensorFlow 模型檔案
-    'safetensors': 'application/octet-stream', // 安全張量檔案
-    'ckpt': 'application/octet-stream',   // 檢查點檔案
-    'mat': 'application/octet-stream',    // MATLAB 數據檔案
-    'gguf': 'application/octet-stream',   // GGUF AI模型檔案
+    'gz': 'application/gzip',
+    'tar': 'application/x-tar',
+    'rar': 'application/vnd.rar',
+    '7z': 'application/x-7z-compressed',
+    'bz2': 'application/x-bzip2',
+    'xz': 'application/x-xz',
+    'tgz': 'application/gzip',
+    'zipx': 'application/zip',
+
+    // Binary/model files
+    'pt': 'application/octet-stream',     // PyTorch model file
+    'pth': 'application/octet-stream',    // PyTorch model file
+    'onnx': 'application/octet-stream',   // ONNX model file
+    'bin': 'application/octet-stream',    // Binary file
+    'h5': 'application/octet-stream',     // HDF5 model file
+    'pb': 'application/octet-stream',     // TensorFlow model file
+    'safetensors': 'application/octet-stream', // SafeTensors file
+    'ckpt': 'application/octet-stream',   // Checkpoint file
+    'mat': 'application/octet-stream',    // MATLAB data file
+    'gguf': 'application/octet-stream',   // GGUF AI model file
   };
   
   return contentTypes[ext] || 'application/octet-stream';
 }
 
-// 導出函數
+// Export functions
 export {
   sanitizeFileName,
   getFileExtension,

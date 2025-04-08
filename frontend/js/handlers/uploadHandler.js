@@ -1,12 +1,12 @@
 /**
- * 檔案上傳處理模組
+ * File Upload Handler Module
  */
 
 import { API_URL, APP_CONFIG } from '../config.js';
 import { formatBytes, formatTime } from '../utils/formatters.js';
 import { loadFileList, getCurrentPrefix } from './fileListHandler.js';
 
-// 上傳狀態變數
+// Upload status variables
 let uploadStartTime = 0;
 let uploadedBytes = 0;
 let totalBytes = 0;
@@ -14,10 +14,10 @@ let lastUpdateTime = 0;
 let lastUploadedBytes = 0;
 
 /**
- * 處理檔案上傳
+ * Handle file upload
  */
 export function uploadFile(file) {
-  // 取得 DOM 元素
+  // Get DOM elements
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
   const fileName = document.getElementById('fileName');
@@ -27,27 +27,27 @@ export function uploadFile(file) {
   const uploadResult = document.getElementById('uploadResult');
   const bucketSelect = document.getElementById('bucketSelect');
 
-  // 重置上傳狀態
+  // Reset upload status
   resetUploadStatus(file, fileName, fileSize, progressBar, uploadSpeed, timeRemaining, uploadResult);
   
-  // 顯示進度條
+  // Show progress bar
   progressContainer.style.display = 'block';
   
-  // 準備 FormData
+  // Prepare FormData
   const formData = new FormData();
   formData.append('file', file);
   formData.append('originalName', file.name);
   
-  // 添加選擇的 bucket (如果有)
+  // Add selected bucket (if any)
   if (bucketSelect && bucketSelect.value) {
     formData.append('bucket', bucketSelect.value);
     console.log('Using selected bucket:', bucketSelect.value);
   }
   
-  // 建立 XHR
+  // Create XHR
   const xhr = new XMLHttpRequest();
   
-  // 上傳完成
+  // Upload completed
   xhr.onload = function() {
     console.log(`Upload completed with status: ${xhr.status}`);
     
@@ -58,18 +58,18 @@ export function uploadFile(file) {
         
         uploadResult.innerHTML = `
           <div class="alert alert-success">
-            檔案上傳成功! 
-            <a href="${API_URL}${result.url}" target="_blank">查看檔案</a>
+            File uploaded successfully! 
+            <a href="${API_URL}${result.url}" target="_blank">View file</a>
             ${result.bucket ? `<span class="badge bg-info">${result.bucket}</span>` : ''}
           </div>
         `;
         loadFileList(getCurrentPrefix());
       } catch (e) {
         console.warn("Response parsing error:", e, "Raw response:", xhr.responseText);
-        // 即使解析錯誤，如果狀態碼為2xx，我們仍視為成功
+        // Even if parsing fails, if the status code is 2xx, we still consider it a success
         uploadResult.innerHTML = `
           <div class="alert alert-success">
-            檔案已上傳成功! (但回應解析失敗)
+            File uploaded successfully! (but response parsing failed)
           </div>
         `;
         loadFileList(getCurrentPrefix());
@@ -80,52 +80,52 @@ export function uploadFile(file) {
         const errorData = JSON.parse(xhr.responseText);
         uploadResult.innerHTML = `
           <div class="alert alert-danger">
-            上傳失敗: ${errorData.error || `伺服器回應 ${xhr.status}`}
+            Upload failed: ${errorData.error || `Server responded with ${xhr.status}`}
           </div>
         `;
       } catch (e) {
         uploadResult.innerHTML = `
           <div class="alert alert-danger">
-            上傳失敗: 伺服器回應 ${xhr.status}
+            Upload failed: Server responded with ${xhr.status}
           </div>
         `;
       }
     }
     
-    // 隱藏進度條
+    // Hide progress bar
     setTimeout(() => {
       progressContainer.style.display = 'none';
       progressBar.style.width = '0%';
     }, 3000);
   };
   
-  // 上傳錯誤
+  // Upload error
   xhr.onerror = function(e) {
     console.error("Network error during upload:", e);
     
     uploadResult.innerHTML = `
       <div class="alert alert-danger">
-        網路錯誤，上傳失敗! 請檢查網路連接或 CORS 設定。
+        Network error, upload failed! Please check your network connection or CORS settings.
       </div>
     `;
     progressContainer.style.display = 'none';
   };
   
-  // 追蹤上傳進度
+  // Track upload progress
   xhr.upload.onprogress = updateProgressHandler(progressBar, uploadSpeed, timeRemaining);
   
-  // 開始上傳
+  // Start upload
   console.log(`Starting upload to ${API_URL}/upload`);
   xhr.open('POST', `${API_URL}/upload`, true);
   xhr.send(formData);
   
-  // 記錄開始時間
+  // Record start time
   uploadStartTime = Date.now();
   lastUpdateTime = uploadStartTime;
 }
 
 /**
- * 重置上傳狀態
+ * Reset upload status
  */
 function resetUploadStatus(file, fileNameEl, fileSizeEl, progressBarEl, uploadSpeedEl, timeRemainingEl, uploadResultEl) {
   fileNameEl.textContent = file.name;
@@ -133,7 +133,7 @@ function resetUploadStatus(file, fileNameEl, fileSizeEl, progressBarEl, uploadSp
   progressBarEl.style.width = '0%';
   progressBarEl.setAttribute('aria-valuenow', '0');
   uploadSpeedEl.textContent = '0 KB/s';
-  timeRemainingEl.textContent = '計算中...';
+  timeRemainingEl.textContent = 'Calculating...';
   uploadResultEl.innerHTML = '';
   totalBytes = file.size;
   uploadedBytes = 0;
@@ -141,7 +141,7 @@ function resetUploadStatus(file, fileNameEl, fileSizeEl, progressBarEl, uploadSp
 }
 
 /**
- * 更新進度顯示
+ * Update progress display
  */
 function updateProgressHandler(progressBarEl, uploadSpeedEl, timeRemainingEl) {
   return function(event) {
@@ -149,23 +149,23 @@ function updateProgressHandler(progressBarEl, uploadSpeedEl, timeRemainingEl) {
       const now = Date.now();
       const elapsedTime = now - lastUpdateTime;
       
-      if (elapsedTime > APP_CONFIG.PROGRESS_UPDATE_INTERVAL) { // 每 200ms 更新一次，避免過於頻繁
+      if (elapsedTime > APP_CONFIG.PROGRESS_UPDATE_INTERVAL) { // Update every 200ms to avoid excessive updates
         const bytesUploaded = event.loaded;
         const bytesTotal = event.total;
         const percentComplete = (bytesUploaded / bytesTotal) * 100;
         
-        // 更新進度條
+        // Update progress bar
         progressBarEl.style.width = percentComplete.toFixed(2) + '%';
         progressBarEl.setAttribute('aria-valuenow', percentComplete.toFixed(2));
         
-        // 計算上傳速度
+        // Calculate upload speed
         const bytesPerSecond = ((bytesUploaded - lastUploadedBytes) / elapsedTime) * 1000;
         const speedText = formatBytes(bytesPerSecond) + '/s';
         uploadSpeedEl.textContent = speedText;
         
-        // 計算剩餘時間
+        // Calculate remaining time
         const remainingBytes = bytesTotal - bytesUploaded;
-        let timeRemainingText = '計算中...';
+        let timeRemainingText = 'Calculating...';
         
         if (bytesPerSecond > 0) {
           const secondsRemaining = Math.ceil(remainingBytes / bytesPerSecond);
@@ -174,7 +174,7 @@ function updateProgressHandler(progressBarEl, uploadSpeedEl, timeRemainingEl) {
         
         timeRemainingEl.textContent = timeRemainingText;
         
-        // 更新變數以備下次計算
+        // Update variables for next calculation
         lastUpdateTime = now;
         lastUploadedBytes = bytesUploaded;
       }
@@ -183,10 +183,10 @@ function updateProgressHandler(progressBarEl, uploadSpeedEl, timeRemainingEl) {
 }
 
 /**
- * 處理資料夾選擇
+ * Process folder selection
  */
 export function processFiles(files) {
-  // 取得 DOM 元素
+  // Get DOM elements
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
   const fileName = document.getElementById('fileName');
@@ -197,37 +197,37 @@ export function processFiles(files) {
   let uploadedCount = 0;
   let errors = [];
   
-  // 創建進度顯示
+  // Create progress display
   progressContainer.style.display = 'block';
   progressBar.style.width = '0%';
-  fileName.textContent = `正在上傳多個檔案 (0/${totalFiles})`;
+  fileName.textContent = `Uploading multiple files (0/${totalFiles})`;
   
-  // 選擇的 bucket
+  // Selected bucket
   const selectedBucket = bucketSelect && bucketSelect.value ? bucketSelect.value : '';
   console.log(`Selected bucket for folder upload: ${selectedBucket || 'none'}`);
   
-  // 依序上傳每個檔案
+  // Upload files sequentially
   return new Promise(async (resolve) => {
     for (const file of files) {
       try {
-        // 獲取完整路徑，包括資料夾結構
-        // 注意：這裡我們保留原始資料夾結構，而不是移除第一個資料夾名稱
+        // Get complete path, including folder structure
+        // Note: Here we preserve the original folder structure instead of removing the first folder name
         const folderPath = file.webkitRelativePath || '';
         
-        // 如果沒有資料夾路徑，則使用檔案名稱
+        // If there's no folder path, use the file name
         const uploadPath = folderPath ? folderPath : file.name;
         
-        // 準備 FormData
+        // Prepare FormData
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('fileName', uploadPath); // 使用完整路徑作為檔案名稱
+        formData.append('fileName', uploadPath); // Use the complete path as the file name
         
-        // 添加選擇的 bucket (如果有)
+        // Add selected bucket (if any)
         if (selectedBucket) {
           formData.append('bucket', selectedBucket);
         }
         
-        // 使用 Promise 包裝 XHR 以便 await
+        // Use Promise to wrap XHR for await
         await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           
@@ -235,18 +235,18 @@ export function processFiles(files) {
             console.log(`File upload ${uploadPath} completed with status: ${xhr.status}`);
             
             if (xhr.status >= 200 && xhr.status < 300) {
-              // 200-299 狀態碼都視為成功
+                // Status codes 200-299 are all considered successful
               try {
                 const response = JSON.parse(xhr.responseText);
                 console.log("Upload response:", response);
                 resolve(response);
               } catch (e) {
                 console.warn("Response parsing error:", e, "Raw response:", xhr.responseText);
-                // 即使解析錯誤，如果狀態碼為 2xx，我們仍視為成功
-                resolve({success: true, message: "檔案已上傳，但回應解析失敗"});
+                // Even if parsing fails, if the status code is 2xx, we still consider it a success
+                resolve({success: true, message: "File uploaded, but response parsing failed"});
               }
             } else {
-              // 非 2xx 狀態碼視為錯誤
+              // Non-2xx status codes are considered errors
               console.error(`Server error (${xhr.status}):`, xhr.responseText);
               try {
                 const errorData = JSON.parse(xhr.responseText);
@@ -259,51 +259,51 @@ export function processFiles(files) {
           
           xhr.onerror = function(e) {
             console.error("Network error during upload:", e);
-            reject(new Error('網路錯誤，上傳失敗'));
+            reject(new Error('Network error, upload failed'));
           };
           
           xhr.open('POST', `${API_URL}/upload`, true);
           xhr.send(formData);
         });
         
-        // 更新進度
+        // Update progress
         uploadedCount++;
         const progress = (uploadedCount / totalFiles) * 100;
         progressBar.style.width = `${progress}%`;
-        fileName.textContent = `正在上傳多個檔案 (${uploadedCount}/${totalFiles})`;
+        fileName.textContent = `Uploading multiple files (${uploadedCount}/${totalFiles})`;
         
       } catch (error) {
-        console.error(`上傳 ${file.name} 失敗:`, error);
+        console.error(`Failed to upload ${file.name}:`, error);
         errors.push({ name: file.name, error: error.message });
       }
     }
     
-    // 上傳完成後顯示結果
+    // Display results after upload completes
     if (errors.length === 0) {
       uploadResult.innerHTML = `
-        <div class="alert alert-success">
-          已成功上傳所有 ${totalFiles} 個檔案！
+      <div class="alert alert-success">
+          Successfully uploaded all ${totalFiles} files!
         </div>
       `;
     } else {
       uploadResult.innerHTML = `
-        <div class="alert alert-warning">
-          上傳完成，但有 ${errors.length} 個檔案失敗。
-          <button class="btn btn-sm btn-outline-secondary mt-2" onclick="showErrorDetails()">顯示詳情</button>
+      <div class="alert alert-warning">
+          Upload complete, but ${errors.length} files failed.
+          <button class="btn btn-sm btn-outline-secondary mt-2" onclick="showErrorDetails()">Show details</button>
         </div>
       `;
       
-      // 存儲錯誤詳情以便後續顯示
+      // Store error details for later display
       window.uploadErrors = errors;
     }
     
-    // 隱藏進度條
+    // Hide progress bar
     setTimeout(() => {
       progressContainer.style.display = 'none';
       progressBar.style.width = '0%';
     }, 3000);
     
-    // 重新載入檔案列表
+    // Reload file list
     loadFileList(getCurrentPrefix());
     
     resolve({

@@ -21,13 +21,13 @@ async function handleUpload(request, env) {
       return authFailureResponse(authResult.error, origin);
     }
 
-    // 檢查請求大小
+    // Check request size
     const contentLength = request.headers.get('Content-Length');
     if (contentLength && parseInt(contentLength) > 100 * 1024 * 1024) {
       return errorResponse('File too large (max 100MB)', 413, origin);
     }
     
-    // 取得並驗證請求資料
+    // Get and validate request data
     let formData;
     try {
       formData = await request.formData();
@@ -37,59 +37,59 @@ async function handleUpload(request, env) {
     
     const file = formData.get('file');
     
-    // 檔案驗證
+    // File validation
     if (!file || !(file instanceof File)) {
       return errorResponse('No file or invalid file provided', 400, origin);
     }
     
-    // 取得檔案名稱和路徑
+    // Get file name and path
     let fileName = formData.get('fileName') || file.name;
     
-    // 檢查是否包含路徑（處理資料夾上傳）
+    // Check if path is included (for folder upload)
     const isPath = fileName.includes('/');
     const folderPath = isPath ? fileName.split('/').slice(0, -1).join('/') : '';
     
-    // 從路徑中獲取最終檔案名稱
+    // Get final file name from path
     const baseName = isPath ? fileName.split('/').pop() : fileName;
     
-    // 淨化檔案名稱，但保留路徑分隔符
+    // Sanitize file name but preserve path separators
     const sanitizedBaseName = sanitizeFileName(baseName);
     
-    // 重組完整路徑和檔案名稱
+    // Rebuild complete path and file name
     fileName = isPath ? `${folderPath}/${sanitizedBaseName}` : sanitizedBaseName;
     
-    // 如果沒有檔案名稱則產生隨機名稱
+    // Generate random name if no file name is provided
     if (!sanitizedBaseName) {
       const fileExt = getFileExtension(file.name || file.type);
       const randomName = `${crypto.randomUUID()}${fileExt ? '.' + fileExt : ''}`;
       fileName = isPath ? `${folderPath}/${randomName}` : randomName;
     }
     
-    // 取得檔案內容類型
+    // Get file content type
     const contentType = file.type || getContentTypeFromFileName(fileName);
     
-    // 取得自訂中繼資料
+    // Get custom metadata
     const customMetadata = {};
     for (const [key, value] of formData.entries()) {
-      // 排除檔案和檔案名稱欄位
+      // Exclude file and file name fields
       if (key !== 'file' && key !== 'fileName') {
         customMetadata[key] = value;
       }
     }
     
-    // 加入上傳時間與檔案大小
+    // Add upload time and file size
     customMetadata.uploadedAt = new Date().toISOString();
     customMetadata.fileSize = file.size.toString();
     
-    // 獲取指定的 R2 儲存空間 (如未指定則自動偵測)
+    // Get specified R2 bucket (auto-detect if not specified)
     let bucketName = formData.get('bucket') || '';
     let r2Binding;
     
     if (bucketName && env[bucketName] && typeof env[bucketName].put === 'function') {
-      // 使用指定的儲存空間
+      // Use specified bucket
       r2Binding = bucketName;
     } else {
-      // 自動偵測所有可用的 R2 binding
+      // Auto-detect all available R2 bindings
       const r2Bindings = Object.keys(env).filter(key => {
         return env[key] && typeof env[key].put === 'function';
       });
@@ -98,15 +98,15 @@ async function handleUpload(request, env) {
         return errorResponse('No R2 buckets available', 500, origin);
       }
       
-      // 使用第一個可用的 binding
+      // Use first available binding
       r2Binding = r2Bindings[0];
     }
     
-    // 將儲存空間名稱加入自訂中繼資料
+    // Add bucket name to custom metadata
     customMetadata.bucket = r2Binding;
     
     try {
-      // 上傳檔案到 R2
+      // Upload file to R2
       await env[r2Binding].put(fileName, file, {
         httpMetadata: {
           contentType: contentType
@@ -118,10 +118,10 @@ async function handleUpload(request, env) {
       return errorResponse(`R2 upload failed: ${error.message}`, 500, origin);
     }
     
-    // 檢查是否為資料夾上傳流程
+    // Check if this is a folder upload process
     const isFromFolderUpload = formData.has('fileName');
     
-    // 回傳成功訊息
+    // Return success message
     return new Response(
       JSON.stringify({
         success: true,
@@ -141,7 +141,7 @@ async function handleUpload(request, env) {
       }
     );
   } catch (error) {
-    // 錯誤處理
+    // Error handling
     console.error('Upload error:', error);
     const origin = request.headers.get('Origin') || '*';
     return errorResponse(`Upload failed: ${error.message}`, 500, origin);

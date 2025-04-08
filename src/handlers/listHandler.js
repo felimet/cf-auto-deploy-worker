@@ -20,34 +20,34 @@ async function handleList(request, env) {
       return authFailureResponse(authResult.error, origin);
     }
     
-    // 分頁參數
+    // Pagination parameters
     const url = new URL(request.url);
     const prefix = url.searchParams.get('prefix') || '';
-    const delimiter = url.searchParams.get('delimiter') || '/';  // 使用斜線作為分隔符以支持資料夾結構
+    const delimiter = url.searchParams.get('delimiter') || '/';  // Use slash as delimiter to support folder structure
     const limit = parseInt(url.searchParams.get('limit')) || 100;
     const cursor = url.searchParams.get('cursor');
     
-    // 從 R2 獲取檔案列表
+    // Get file list from R2
     const options = {
       prefix: prefix,
       limit: limit,
-      delimiter: delimiter  // 添加分隔符來支持資料夾結構
+      delimiter: delimiter  // Add delimiter to support folder structure
     };
     
-    // 只有當 cursor 存在且為字串時才添加
+    // Only add cursor when it exists and is a string
     if (cursor && typeof cursor === 'string') {
       options.cursor = cursor;
     }
     
-    // 從 URL 參數獲取指定的 bucket (如有)
+    // Get specified bucket from URL parameters (if any)
     let bucketName = url.searchParams.get('bucket') || '';
     let r2Binding;
     
     if (bucketName && env[bucketName] && typeof env[bucketName].put === 'function') {
-      // 使用指定的儲存空間
+      // Use the specified storage space
       r2Binding = bucketName;
     } else {
-      // 自動偵測所有可用的 R2 binding
+      // Auto-detect all available R2 bindings
       const r2Bindings = Object.keys(env).filter(key => {
         return env[key] && typeof env[key].put === 'function';
       });
@@ -56,26 +56,26 @@ async function handleList(request, env) {
         return errorResponse('No R2 buckets available', 500, origin);
       }
       
-      // 使用第一個可用的 binding
+      // Use the first available binding
       r2Binding = r2Bindings[0];
     }
     
-    // 從 R2 獲取檔案列表
+    // Get file list from R2
     const listing = await env[r2Binding].list(options);
     
-    // 格式化檔案輸出
+    // Format file output
     const files = listing.objects.map(obj => ({
       name: obj.key,
       size: obj.size,
       uploaded: obj.uploaded.toISOString(),
       etag: obj.etag,
       bucket: r2Binding,
-      isFolder: obj.key.endsWith('/'),  // 標記是否是資料夾
+      isFolder: obj.key.endsWith('/'),  // Mark if it's a folder
       httpMetadata: obj.httpMetadata,
       customMetadata: obj.customMetadata
     }));
     
-    // 處理資料夾（前綴）
+    // Process folders (prefixes)
     const folders = listing.delimitedPrefixes ? listing.delimitedPrefixes.map(prefix => ({
       name: prefix,
       isFolder: true,
@@ -83,16 +83,16 @@ async function handleList(request, env) {
       size: 0
     })) : [];
     
-    // 合併檔案和資料夾並按名稱排序
+    // Merge files and folders and sort by name
     const allItems = [...files, ...folders].sort((a, b) => {
-      // 資料夾優先
+      // Folders first
       if (a.isFolder && !b.isFolder) return -1;
       if (!a.isFolder && b.isFolder) return 1;
-      // 同類型按名稱字母排序
+      // Same type sorted alphabetically by name
       return a.name.localeCompare(b.name);
     });
     
-    // 回傳結果
+    // Return results
     return new Response(
       JSON.stringify({
         files: allItems,
