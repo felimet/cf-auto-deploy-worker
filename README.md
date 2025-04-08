@@ -15,19 +15,6 @@ This is a file upload and management system using Cloudflare Workers and R2 stor
 - Drag-and-drop file upload interface
 - Supports model files (`.pt`, `.ckpt`, `.safetensors`, etc.)
 
-## Project Structure
-
-```
-cf-auto-deploy-worker/
-├── wrangler.toml         # Cloudflare Workers config file
-├── deploy.js             # Automated deployment script
-├── src/
-│   └── index.js          # Worker backend code
-└── frontend/
-    ├── index.html        # Frontend HTML page
-    └── app.js            # Frontend JavaScript
-```
-
 ## Requirements
 
 - [Node.js](https://nodejs.org/) 14.x or higher
