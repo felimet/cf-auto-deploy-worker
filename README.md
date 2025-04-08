@@ -4,6 +4,9 @@
 
 This is a file upload and management system using Cloudflare Workers and R2 storage service. It provides a comprehensive file management solution with no file size limit, making it well-suited for managing large files such as model files.
 
+## UI
+![cfr2-ui](demo/ui.png)
+
 ## Features
 
 - Store large files on Cloudflare R2 with no file size limit
