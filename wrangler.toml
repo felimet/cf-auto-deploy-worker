@@ -1,15 +1,12 @@
-# This is a configuration file for a Cloudflare Workers project using Wrangler.
-# It specifies the project name, compatibility date, and R2 storage settings.
-# For more information, see: https://developers.cloudflare.com/workers/wrangler/
-name = "myworker"
+name = "cfr2-worker"
 main = "src/index.js"
-compatibility_date = "2025-04-06"
+compatibility_date = "2025-04-07"
 
-# R2 Storage Settings
+# R2 storage settings
 [[r2_buckets]]
 binding = "mybinding"
 bucket_name = "mybucket"
 
-# Environment variable settings
+# Environment variables
 [vars]
 ALLOWED_ORIGINS = "*"
